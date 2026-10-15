@@ -1,0 +1,2668 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>TodoPopi Invoice Studio — Facturador Oficial</title>
+
+  <!-- Bibliotecas externas vía CDN para exportación a PDF, PNG y JPG -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+
+  <style>
+    :root {
+      --tp-primary: #111827;
+      --tp-accent: #d97706;
+      --tp-accent-dark: #b45309;
+      --tp-border: #d1d5db;
+      --tp-border-strong: #111827;
+      --tp-bg-app: #f3f4f6;
+      --tp-panel-bg: #ffffff;
+      --tp-success: #059669;
+      --tp-danger: #dc2626;
+      --tp-warning: #d97706;
+      --tp-muted: #6b7280;
+      --sheet-width: 794px; /* Ancho estándar Carta/A4 a 96 DPI */
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--tp-bg-app);
+      color: #1f2937;
+      line-height: 1.45;
+      padding-bottom: 40px;
+    }
+
+    /* ==========================================================================
+       BARRA SUPERIOR ADMINISTRATIVA
+       ========================================================================== */
+    .app-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: #111827;
+      color: #ffffff;
+      padding: 12px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .brand-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-badge {
+      background: var(--tp-accent);
+      color: #fff;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+      font-size: 0.9rem;
+    }
+
+    .brand-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .status-indicators {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .status-pill {
+      font-size: 0.78rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .status-saved {
+      background: rgba(5, 150, 105, 0.25);
+      color: #6ee7b7;
+      border: 1px solid rgba(110, 231, 183, 0.4);
+    }
+
+    .status-unsaved {
+      background: rgba(217, 119, 6, 0.25);
+      color: #fcd34d;
+      border: 1px solid rgba(252, 211, 77, 0.4);
+    }
+
+    .cdn-warning-banner {
+      display: none;
+      background: #fef3c7;
+      color: #92400e;
+      border-bottom: 2px solid #f59e0b;
+      padding: 10px 16px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .draft-recovery-banner {
+      display: none;
+      background: #dbeafe;
+      color: #1e40af;
+      border-bottom: 2px solid #3b82f6;
+      padding: 10px 16px;
+      font-size: 0.88rem;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* ==========================================================================
+       CONTENEDOR PRINCIPAL (GRID RESPONSIVE)
+       ========================================================================== */
+    .studio-layout {
+      max-width: 1600px;
+      margin: 16px auto;
+      padding: 0 12px;
+      display: grid;
+      grid-template-columns: 500px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 1180px) {
+      .studio-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ==========================================================================
+       PANEL DE EDICIÓN Y CONTROLES
+       ========================================================================== */
+    .admin-panel {
+      background: var(--tp-panel-bg);
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e5e7eb;
+      overflow: hidden;
+    }
+
+    .quick-actions-bar {
+      padding: 12px;
+      background: #f9fafb;
+      border-bottom: 1px solid #e5e7eb;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 8px;
+    }
+
+    .nav-tabs {
+      display: flex;
+      overflow-x: auto;
+      background: #1f2937;
+      border-bottom: 1px solid #374151;
+      scrollbar-width: thin;
+    }
+
+    .nav-tab {
+      flex: 1;
+      min-width: max-content;
+      padding: 12px 14px;
+      background: transparent;
+      color: #d1d5db;
+      border: none;
+      border-bottom: 3px solid transparent;
+      font-size: 0.86rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .nav-tab:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-tab.active {
+      color: #fbbf24;
+      border-bottom-color: #fbbf24;
+      background: rgba(251, 191, 36, 0.08);
+    }
+
+    .tab-pane {
+      display: none;
+      padding: 16px;
+    }
+
+    .tab-pane.active {
+      display: block;
+    }
+
+    .section-heading {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #f3f4f6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    @media (max-width: 600px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 10px;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #374151;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.92rem;
+      font-family: inherit;
+      color: #111827;
+      background: #fff;
+      transition: border-color 0.15s;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--tp-accent);
+      box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 64px;
+    }
+
+    /* Botones grandes y accesibles para Android/iPhone */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      text-align: center;
+      min-height: 42px;
+      user-select: none;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn-primary {
+      background: #111827;
+      color: #ffffff;
+    }
+    .btn-primary:hover {
+      background: #1f2937;
+    }
+
+    .btn-accent {
+      background: var(--tp-accent);
+      color: #ffffff;
+    }
+    .btn-accent:hover {
+      background: var(--tp-accent-dark);
+    }
+
+    .btn-success {
+      background: var(--tp-success);
+      color: #ffffff;
+    }
+    .btn-success:hover {
+      background: #047857;
+    }
+
+    .btn-danger {
+      background: #fee2e2;
+      color: #b91c1c;
+      border-color: #fecaca;
+    }
+    .btn-danger:hover {
+      background: #fecaca;
+    }
+
+    .btn-outline {
+      background: #ffffff;
+      color: #1f2937;
+      border-color: #d1d5db;
+    }
+    .btn-outline:hover {
+      background: #f3f4f6;
+    }
+
+    .btn-sm {
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      min-height: 32px;
+    }
+
+    /* Tarjetas de edición de productos en el panel */
+    .product-editor-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .product-card {
+      background: #f9fafb;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .product-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .product-index-badge {
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: #111827;
+      background: #e5e7eb;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .product-card-actions {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .product-card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.2fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 520px) {
+      .product-card-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .product-subtotal-preview {
+      margin-top: 8px;
+      text-align: right;
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    /* Lista de facturas guardadas */
+    .saved-invoice-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 460px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .saved-invoice-item {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px;
+      background: #f9fafb;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .saved-invoice-item.active-invoice {
+      border-color: var(--tp-accent);
+      background: #fffbeb;
+    }
+
+    .saved-invoice-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .saved-invoice-num {
+      font-weight: 800;
+      color: #111827;
+      font-size: 0.95rem;
+    }
+
+    .saved-invoice-total {
+      font-weight: 800;
+      color: var(--tp-success);
+      font-size: 0.95rem;
+    }
+
+    .saved-invoice-meta {
+      font-size: 0.82rem;
+      color: #4b5563;
+    }
+
+    .saved-invoice-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    /* ==========================================================================
+       ZONA DE VISTA PREVIA Y EXPORTACIÓN DE LA FACTURA
+       ========================================================================== */
+    .preview-column {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .export-toolbar {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 12px 16px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .export-options-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .export-options-group label {
+      font-size: 0.78rem;
+      margin-bottom: 2px;
+    }
+
+    .export-options-group select {
+      padding: 6px 10px;
+      font-size: 0.84rem;
+      width: auto;
+    }
+
+    .export-buttons-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    /* Contenedor que mantiene proporciones exactas de la factura sin deformar en móvil */
+    .invoice-viewport {
+      width: 100%;
+      overflow-x: auto;
+      background: #d1d5db;
+      padding: 20px 10px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.12);
+    }
+
+    .invoice-scale-wrapper {
+      width: var(--sheet-width);
+      min-width: var(--sheet-width);
+      transform-origin: top center;
+      transition: transform 0.15s ease;
+    }
+
+    /* ==========================================================================
+       DISEÑO ORIGINAL DE LA FACTURA TODOPOPI (#invoice-sheet)
+       Fidelidad estricta: tipografía, bordes, márgenes, tabla, condiciones y pie
+       ========================================================================== */
+    #invoice-sheet {
+      width: 794px;
+      min-height: 1050px;
+      background: #ffffff;
+      color: #000000;
+      padding: 44px 50px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+      font-family: "Georgia", "Times New Roman", serif;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-sizing: border-box;
+    }
+
+    .tp-doc-top {
+      flex: 1;
+    }
+
+    /* Encabezado original */
+    .tp-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2.5px solid #000000;
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+      gap: 20px;
+    }
+
+    .tp-logo-area {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      max-width: 55%;
+    }
+
+    .tp-logo-img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      object-fit: contain;
+    }
+
+    .tp-company-tagline {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 11.5px;
+      color: #222222;
+      letter-spacing: 0.3px;
+      white-space: pre-line;
+    }
+
+    .tp-title-block {
+      text-align: right;
+      min-width: 240px;
+    }
+
+    .tp-doc-title {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 30px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      color: #000000;
+      margin: 0 0 10px 0;
+      line-height: 1;
+    }
+
+    .tp-meta-table {
+      margin-left: auto;
+      border-collapse: collapse;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 12.5px;
+    }
+
+    .tp-meta-table td {
+      padding: 3px 6px;
+      text-align: right;
+    }
+
+    .tp-meta-table td.tp-meta-label {
+      font-weight: 700;
+      color: #111111;
+      padding-right: 8px;
+    }
+
+    .tp-meta-table td.tp-meta-val {
+      font-weight: 700;
+      color: #000000;
+      border-bottom: 1px solid #444444;
+      min-width: 135px;
+      text-align: center;
+    }
+
+    /* Bloque de datos del cliente */
+    .tp-client-box {
+      border: 1.5px solid #000000;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      background: #fafafa;
+    }
+
+    .tp-client-row {
+      display: flex;
+      align-items: baseline;
+      margin-bottom: 6px;
+      gap: 8px;
+    }
+
+    .tp-client-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .tp-client-label {
+      font-weight: 700;
+      min-width: 90px;
+      color: #000000;
+    }
+
+    .tp-client-value {
+      flex: 1;
+      border-bottom: 1px dotted #555555;
+      padding-bottom: 2px;
+      color: #000000;
+      word-break: break-word;
+    }
+
+    /* Texto introductorio */
+    .tp-intro-text {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 12.8px;
+      color: #111111;
+      margin-bottom: 14px;
+      line-height: 1.5;
+      white-space: pre-line;
+    }
+
+    /* Tabla de productos */
+    .tp-items-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 12.5px;
+      margin-bottom: 18px;
+    }
+
+    .tp-items-table thead th {
+      background-color: #111111;
+      color: #ffffff;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11.5px;
+      letter-spacing: 0.5px;
+      padding: 9px 10px;
+      border: 1px solid #000000;
+    }
+
+    .tp-items-table tbody td {
+      padding: 8px 10px;
+      border: 1px solid #333333;
+      vertical-align: top;
+      color: #000000;
+      word-break: break-word;
+    }
+
+    .tp-items-table tbody tr:nth-child(even) {
+      background-color: #f8f8f8;
+    }
+
+    .col-cant {
+      width: 11%;
+      text-align: center;
+    }
+
+    .col-unid {
+      width: 13%;
+      text-align: center;
+    }
+
+    .col-desc {
+      width: 44%;
+      text-align: left;
+      white-space: pre-line;
+    }
+
+    .col-unit {
+      width: 16%;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .col-sub {
+      width: 16%;
+      text-align: right;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    /* Sección inferior de Condiciones + Totales */
+    .tp-summary-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      margin-top: 6px;
+      margin-bottom: 22px;
+      page-break-inside: avoid;
+    }
+
+    .tp-conditions-box {
+      flex: 1;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 12px;
+      border: 1px solid #333333;
+      padding: 10px 14px;
+      background: #fcfcfc;
+    }
+
+    .tp-conditions-title {
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11.5px;
+      margin-bottom: 6px;
+      border-bottom: 1px solid #cccccc;
+      padding-bottom: 4px;
+      color: #000000;
+    }
+
+    .tp-conditions-content {
+      white-space: pre-line;
+      line-height: 1.5;
+      color: #111111;
+    }
+
+    .tp-totals-box {
+      width: 270px;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .tp-totals-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .tp-totals-table td {
+      padding: 6px 10px;
+      border: 1px solid #333333;
+    }
+
+    .tp-totals-table td.label-cell {
+      font-weight: 700;
+      text-align: left;
+      background: #f3f3f3;
+    }
+
+    .tp-totals-table td.amount-cell {
+      text-align: right;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .tp-totals-table tr.grand-total-row td {
+      background: #111111;
+      color: #ffffff;
+      font-size: 14.5px;
+      font-weight: 800;
+      padding: 9px 10px;
+      border-color: #000000;
+    }
+
+    /* Mensaje corporativo y firmas */
+    .tp-corporate-message {
+      font-family: Georgia, "Times New Roman", serif;
+      font-style: italic;
+      font-size: 13px;
+      text-align: center;
+      margin: 18px 0 14px 0;
+      padding: 10px 14px;
+      border-top: 1px dashed #666666;
+      border-bottom: 1px dashed #666666;
+      color: #111111;
+      white-space: pre-line;
+      page-break-inside: avoid;
+    }
+
+    /* Pie de página con datos de TodoPopi */
+    .tp-footer {
+      border-top: 2px solid #000000;
+      padding-top: 10px;
+      margin-top: 14px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 11.5px;
+      color: #222222;
+      text-align: center;
+      line-height: 1.5;
+      white-space: pre-line;
+      page-break-inside: avoid;
+    }
+
+    /* Notificación flotante (Toast) */
+    #toast-notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+      background: #111827;
+      color: #ffffff;
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+      display: none;
+      max-width: 340px;
+      border-left: 4px solid var(--tp-accent);
+    }
+
+    /* ==========================================================================
+       CONFIGURACIÓN DE IMPRESIÓN (@media print)
+       Muestra exclusivamente la factura respetando márgenes y proporciones
+       ========================================================================== */
+    @media print {
+      @page {
+        margin: 10mm;
+      }
+
+      html, body {
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .app-topbar,
+      .cdn-warning-banner,
+      .draft-recovery-banner,
+      .admin-panel,
+      .export-toolbar,
+      #toast-notification {
+        display: none !important;
+      }
+
+      .studio-layout {
+        display: block !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+      }
+
+      .preview-column,
+      .invoice-viewport,
+      .invoice-scale-wrapper {
+        display: block !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        transform: none !important;
+        overflow: visible !important;
+      }
+
+      #invoice-sheet {
+        width: 100% !important;
+        min-height: auto !important;
+        box-shadow: none !important;
+        padding: 12px 18px !important;
+        margin: 0 auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- BARRA SUPERIOR -->
+  <header class="app-topbar">
+    <div class="brand-bar">
+      <span class="brand-badge">TODOPOPI</span>
+      <span class="brand-title">Invoice Studio</span>
+    </div>
+    <div class="status-indicators">
+      <span id="save-status-pill" class="status-pill status-saved">✓ Guardado al día</span>
+      <button type="button" class="btn btn-accent btn-sm" id="btn-top-save">💾 Guardar Factura</button>
+      <button type="button" class="btn btn-outline btn-sm" id="btn-top-new">＋ Nueva</button>
+    </div>
+  </header>
+
+  <!-- AVISO SI LAS BIBLIOTECAS CDN NO ESTÁN DISPONIBLES -->
+  <div id="cdn-warning" class="cdn-warning-banner">
+    ⚠️ Aviso: No se pudieron cargar las bibliotecas externas (html2canvas / jsPDF) por falta de conexión a Internet. La edición, el guardado en base de datos local, las copias JSON y el botón "Imprimir / Guardar PDF nativo" siguen funcionando al 100%.
+  </div>
+
+  <!-- BANNER DE RECUPERACIÓN DE BORRADOR -->
+  <div id="draft-banner" class="draft-recovery-banner">
+    <span>📝 Se encontró un borrador automático sin guardar de tu última sesión.</span>
+    <button type="button" class="btn btn-primary btn-sm" id="btn-recover-draft">Recuperar Borrador</button>
+    <button type="button" class="btn btn-outline btn-sm" id="btn-discard-draft">Descartar</button>
+  </div>
+
+  <!-- LAYOUT PRINCIPAL -->
+  <main class="studio-layout">
+
+    <!-- ========================================================================
+         COLUMNA IZQUIERDA: PANEL ADMINISTRATIVO DE EDICIÓN
+         ======================================================================== -->
+    <section class="admin-panel" aria-label="Panel Administrativo">
+
+      <!-- Acciones Rápidas de Factura -->
+      <div class="quick-actions-bar">
+        <button type="button" class="btn btn-success" id="btn-save-invoice">💾 Guardar / Actualizar</button>
+        <button type="button" class="btn btn-outline" id="btn-save-as-new">📑 Guardar como otra</button>
+        <button type="button" class="btn btn-outline" id="btn-duplicate-current">📋 Duplicar</button>
+        <button type="button" class="btn btn-primary" id="btn-new-invoice">📄 Factura Nueva</button>
+      </div>
+
+      <!-- Pestañas de Navegación -->
+      <nav class="nav-tabs" role="tablist">
+        <button type="button" class="nav-tab active" data-tab="tab-datos">1. Cliente y Fecha</button>
+        <button type="button" class="nav-tab" data-tab="tab-productos">2. Productos</button>
+        <button type="button" class="nav-tab" data-tab="tab-totales">3. Cargos y Condiciones</button>
+        <button type="button" class="nav-tab" data-tab="tab-historial">4. Historial (<span id="count-invoices">0</span>)</button>
+        <button type="button" class="nav-tab" data-tab="tab-config">5. Logo y Negocio</button>
+      </nav>
+
+      <!-- PESTAÑA 1: CLIENTE, FECHA Y NUMERACIÓN -->
+      <div class="tab-pane active" id="tab-datos">
+        <div class="section-heading">
+          <span>Numeración y Fecha</span>
+          <button type="button" class="btn btn-outline btn-sm" id="btn-gen-number">🔄 Generar # Secuencial</button>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="inp-number">Número de Factura</label>
+            <input type="text" id="inp-number" placeholder="TP-2026-1014-001" />
+          </div>
+          <div class="form-group">
+            <label for="inp-date">Fecha de Emisión</label>
+            <input type="date" id="inp-date" />
+          </div>
+          <div class="form-group">
+            <label for="inp-currency">Moneda</label>
+            <select id="inp-currency">
+              <option value="RD$">RD$ (Peso Dominicano)</option>
+              <option value="US$">US$ (Dólar Estadounidense)</option>
+              <option value="€">€ (Euro)</option>
+              <option value="$">$ (Signo Peso Genérico)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="inp-client-phone">Teléfono / RNC Cliente (Opcional)</label>
+            <input type="text" id="inp-client-phone" placeholder="Ej: 809-555-0000" />
+          </div>
+        </div>
+
+        <div class="section-heading">
+          <span>Datos del Cliente</span>
+        </div>
+
+        <div class="form-group">
+          <label for="inp-client-name">Nombre del Cliente / Empresa</label>
+          <input type="text" id="inp-client-name" placeholder="Nombre completo o razón social" />
+        </div>
+
+        <div class="form-group">
+          <label for="inp-client-address">Dirección / Ciudad / Referencia</label>
+          <input type="text" id="inp-client-address" placeholder="Dirección de entrega o domicilio" />
+        </div>
+
+        <div class="form-group">
+          <label for="inp-intro-text">Texto Introductorio de la Factura</label>
+          <textarea id="inp-intro-text" rows="2"></textarea>
+        </div>
+      </div>
+
+      <!-- PESTAÑA 2: PRODUCTOS Y SERVICIOS -->
+      <div class="tab-pane" id="tab-productos">
+        <div class="section-heading">
+          <span>Detalle de Productos y Servicios</span>
+          <button type="button" class="btn btn-accent btn-sm" id="btn-add-item">＋ Agregar Producto</button>
+        </div>
+
+        <div id="product-editor-container" class="product-editor-list"></div>
+
+        <button type="button" class="btn btn-primary" style="width:100%;" id="btn-add-item-bottom">
+          ＋ Añadir otra fila de producto o servicio
+        </button>
+      </div>
+
+      <!-- PESTAÑA 3: CARGOS, DESCUENTOS Y CONDICIONES -->
+      <div class="tab-pane" id="tab-totales">
+        <div class="section-heading">
+          <span>Descuentos, Impuestos y Envío (Se ocultan si son 0)</span>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="inp-discount-type">Tipo de Descuento</label>
+            <select id="inp-discount-type">
+              <option value="fixed">Monto fijo (RD$)</option>
+              <option value="percent">Porcentaje (%)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="inp-discount-val">Valor del Descuento</label>
+            <input type="number" id="inp-discount-val" min="0" step="0.01" value="0" />
+          </div>
+
+          <div class="form-group">
+            <label for="inp-tax-type">Tipo de Impuesto (ITBIS)</label>
+            <select id="inp-tax-type">
+              <option value="percent">Porcentaje (%)</option>
+              <option value="fixed">Monto fijo (RD$)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="inp-tax-val">Valor de Impuesto</label>
+            <input type="number" id="inp-tax-val" min="0" step="0.01" value="0" />
+          </div>
+
+          <div class="form-group full">
+            <label for="inp-shipping-val">Gastos de Envío / Cargos Adicionales</label>
+            <input type="number" id="inp-shipping-val" min="0" step="0.01" value="0" />
+          </div>
+        </div>
+
+        <div class="section-heading">
+          <span>Condiciones Comerciales y Mensaje</span>
+        </div>
+
+        <div class="form-group">
+          <label for="inp-conditions">Condiciones Comerciales (Entrega, Forma de Pago, etc.)</label>
+          <textarea id="inp-conditions" rows="4"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="inp-corporate-msg">Mensaje Corporativo / Nota de Agradecimiento</label>
+          <textarea id="inp-corporate-msg" rows="2"></textarea>
+        </div>
+      </div>
+
+      <!-- PESTAÑA 4: HISTORIAL Y ADMINISTRACIÓN DE FACTURAS (IndexedDB) -->
+      <div class="tab-pane" id="tab-historial">
+        <div class="section-heading">
+          <span>Buscar y Filtrar Facturas Guardadas</span>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group full">
+            <label for="search-query">Buscar por Cliente o Número de Factura</label>
+            <input type="text" id="search-query" placeholder="Ej: Juan Pérez o TP-2026..." />
+          </div>
+          <div class="form-group">
+            <label for="filter-date">Filtrar por Fecha Exacta</label>
+            <input type="date" id="filter-date" />
+          </div>
+          <div class="form-group">
+            <label for="sort-order">Ordenar por Fecha</label>
+            <select id="sort-order">
+              <option value="desc">Más recientes primero</option>
+              <option value="asc">Más antiguas primero</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px; gap:8px; flex-wrap:wrap;">
+          <button type="button" class="btn btn-outline btn-sm" id="btn-clear-filters">Limpiar Filtros</button>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button type="button" class="btn btn-primary btn-sm" id="btn-export-backup">⬇️ Exportar Backup JSON</button>
+            <label class="btn btn-outline btn-sm" style="margin:0; cursor:pointer;">
+              ⬆️ Importar JSON
+              <input type="file" id="inp-import-backup" accept=".json,application/json" style="display:none;" />
+            </label>
+          </div>
+        </div>
+
+        <div id="saved-invoices-container" class="saved-invoice-list"></div>
+      </div>
+
+      <!-- PESTAÑA 5: LOGOTIPO Y CONFIGURACIÓN CORPORATIVA -->
+      <div class="tab-pane" id="tab-config">
+        <div class="section-heading">
+          <span>Logotipo de TodoPopi</span>
+        </div>
+
+        <div class="form-group">
+          <label for="inp-logo-upload">Cargar logotipo desde tu teléfono u ordenador (PNG, JPG, SVG, WEBP)</label>
+          <input type="file" id="inp-logo-upload" accept="image/*" />
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="inp-logo-width">Tamaño del Logotipo (<span id="lbl-logo-width">190</span> px)</label>
+            <input type="range" id="inp-logo-width" min="90" max="340" step="5" value="190" />
+          </div>
+          <div class="form-group" style="justify-content:flex-end;">
+            <button type="button" class="btn btn-outline btn-sm" id="btn-restore-default-logo">Restaurar Logo Original TodoPopi</button>
+          </div>
+        </div>
+
+        <div class="section-heading">
+          <span>Secuencia y Prefijo de Numeración</span>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="inp-cfg-prefix">Prefijo de Factura</label>
+            <input type="text" id="inp-cfg-prefix" value="TP" />
+          </div>
+          <div class="form-group">
+            <label for="inp-cfg-seq">Próxima Secuencia Numérica</label>
+            <input type="number" id="inp-cfg-seq" min="1" step="1" value="1" />
+          </div>
+        </div>
+
+        <div class="section-heading">
+          <span>Datos Fijos del Negocio (Encabezado y Pie de Página)</span>
+        </div>
+
+        <div class="form-group">
+          <label for="inp-cfg-tagline">Subtítulo / Datos debajo del Logotipo</label>
+          <textarea id="inp-cfg-tagline" rows="2"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="inp-cfg-footer">Pie de Página Oficial de TodoPopi (Teléfono, Dirección, Web, Redes)</label>
+          <textarea id="inp-cfg-footer" rows="3"></textarea>
+        </div>
+
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;">
+          <button type="button" class="btn btn-success" id="btn-save-config">💾 Guardar Configuración</button>
+          <button type="button" class="btn btn-outline" id="btn-export-config-json">⬇️ Backup Configuración</button>
+          <button type="button" class="btn btn-danger" id="btn-reset-factory">⚠️ Restaurar Valores Originales</button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================================================
+         COLUMNA DERECHA: BARRA DE EXPORTACIÓN Y DOCUMENTO ORIGINAL (#invoice-sheet)
+         ======================================================================== -->
+    <section class="preview-column" aria-label="Vista previa y exportación de factura">
+
+      <!-- Barra de Exportación e Impresión -->
+      <div class="export-toolbar">
+        <div class="export-options-group">
+          <div>
+            <label for="sel-paper-size">Tamaño Papel PDF</label>
+            <select id="sel-paper-size">
+              <option value="letter">Carta (Letter 8.5" × 11")</option>
+              <option value="a4">A4 (210 × 297 mm)</option>
+              <option value="legal">Oficio / Legal (8.5" × 14")</option>
+            </select>
+          </div>
+          <div>
+            <label for="sel-img-scale">Resolución Imagen</label>
+            <select id="sel-img-scale">
+              <option value="2">Alta Definición (2x)</option>
+              <option value="3">Ultra HD (3x)</option>
+              <option value="1">Estándar (1x)</option>
+            </select>
+          </div>
+          <div>
+            <label for="sel-jpg-quality">Calidad JPG</label>
+            <select id="sel-jpg-quality">
+              <option value="0.95">Máxima (95%)</option>
+              <option value="0.85">Alta (85%)</option>
+              <option value="0.75">Media (75%)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="export-buttons-group">
+          <button type="button" class="btn btn-primary" id="btn-export-pdf">📄 EXPORTAR PDF</button>
+          <button type="button" class="btn btn-accent" id="btn-export-png">🖼️ EXPORTAR PNG</button>
+          <button type="button" class="btn btn-outline" id="btn-export-jpg">📷 EXPORTAR JPG</button>
+          <button type="button" class="btn btn-success" id="btn-print-invoice">🖨️ IMPRIMIR FACTURA</button>
+        </div>
+      </div>
+
+      <!-- Visor adaptable que preserva las dimensiones exactas de la hoja -->
+      <div class="invoice-viewport" id="invoice-viewport">
+        <div class="invoice-scale-wrapper" id="invoice-scale-wrapper">
+
+          <!-- ==================================================================
+               HOJA DE FACTURA ORIGINAL TODOPOPI (Se exporta exclusivamente esto)
+               ================================================================== -->
+          <article id="invoice-sheet">
+            <div class="tp-doc-top">
+
+              <!-- ENCABEZADO -->
+              <header class="tp-header">
+                <div class="tp-logo-area">
+                  <img id="doc-logo-img" class="tp-logo-img" alt="Logo TodoPopi" src="" style="width: 190px;" />
+                  <div id="doc-company-tagline" class="tp-company-tagline"></div>
+                </div>
+
+                <div class="tp-title-block">
+                  <h1 class="tp-doc-title">FACTURA</h1>
+                  <table class="tp-meta-table">
+                    <tbody>
+                      <tr>
+                        <td class="tp-meta-label">FACTURA Nº:</td>
+                        <td class="tp-meta-val" id="doc-number">TP-2026-1014-001</td>
+                      </tr>
+                      <tr>
+                        <td class="tp-meta-label">FECHA:</td>
+                        <td class="tp-meta-val" id="doc-date">14/10/2026</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </header>
+
+              <!-- DATOS DEL CLIENTE -->
+              <section class="tp-client-box">
+                <div class="tp-client-row">
+                  <span class="tp-client-label">CLIENTE:</span>
+                  <span class="tp-client-value" id="doc-client-name">Cliente General</span>
+                </div>
+                <div class="tp-client-row" id="row-doc-client-address">
+                  <span class="tp-client-label">DIRECCIÓN:</span>
+                  <span class="tp-client-value" id="doc-client-address">San Cristóbal, República Dominicana</span>
+                </div>
+                <div class="tp-client-row" id="row-doc-client-phone" style="display:none;">
+                  <span class="tp-client-label">TELÉFONO:</span>
+                  <span class="tp-client-value" id="doc-client-phone"></span>
+                </div>
+              </section>
+
+              <!-- TEXTO INTRODUCTORIO -->
+              <div class="tp-intro-text" id="doc-intro-text"></div>
+
+              <!-- TABLA DE PRODUCTOS -->
+              <table class="tp-items-table">
+                <thead>
+                  <tr>
+                    <th class="col-cant">CANT.</th>
+                    <th class="col-unid">UNIDAD</th>
+                    <th class="col-desc">DESCRIPCIÓN</th>
+                    <th class="col-unit">PRECIO UNIT.</th>
+                    <th class="col-sub">SUBTOTAL</th>
+                  </tr>
+                </thead>
+                <tbody id="doc-items-tbody"></tbody>
+              </table>
+
+              <!-- CONDICIONES Y TOTALES -->
+              <section class="tp-summary-section">
+                <div class="tp-conditions-box">
+                  <div class="tp-conditions-title">CONDICIONES COMERCIALES</div>
+                  <div class="tp-conditions-content" id="doc-conditions"></div>
+                </div>
+
+                <div class="tp-totals-box">
+                  <table class="tp-totals-table">
+                    <tbody>
+                      <tr id="row-subtotal">
+                        <td class="label-cell">SUBTOTAL:</td>
+                        <td class="amount-cell" id="doc-subtotal">RD$0.00</td>
+                      </tr>
+                      <tr id="row-discount" style="display:none;">
+                        <td class="label-cell" id="lbl-doc-discount">DESCUENTO:</td>
+                        <td class="amount-cell" id="doc-discount">-RD$0.00</td>
+                      </tr>
+                      <tr id="row-tax" style="display:none;">
+                        <td class="label-cell" id="lbl-doc-tax">IMPUESTOS:</td>
+                        <td class="amount-cell" id="doc-tax">RD$0.00</td>
+                      </tr>
+                      <tr id="row-shipping" style="display:none;">
+                        <td class="label-cell">ENVÍO / CARGOS:</td>
+                        <td class="amount-cell" id="doc-shipping">RD$0.00</td>
+                      </tr>
+                      <tr class="grand-total-row">
+                        <td>TOTAL GENERAL:</td>
+                        <td class="amount-cell" id="doc-grand-total">RD$0.00</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+            </div>
+
+            <!-- MENSAJE CORPORATIVO Y PIE DE PÁGINA -->
+            <div class="tp-doc-bottom">
+              <div class="tp-corporate-message" id="doc-corporate-msg"></div>
+              <footer class="tp-footer" id="doc-footer"></footer>
+            </div>
+          </article>
+
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- NOTIFICACIÓN TOAST -->
+  <div id="toast-notification" role="status" aria-live="polite"></div>
+
+  <!-- ==========================================================================
+       LÓGICA JAVASCRIPT INTEGRADA (PLANTILLA, CÁLCULOS, INDEXEDDB Y EXPORTACIÓN)
+       ========================================================================== -->
+  <script>
+    (function () {
+      "use strict";
+
+      /* ------------------------------------------------------------------------
+         1. GENERADOR DEL LOGOTIPO ORIGINAL DE TODOPOPI EN BASE64 (SIN CORS)
+         ------------------------------------------------------------------------ */
+      function generateDefaultTodoPopiLogoDataURL() {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="440" height="120" viewBox="0 0 440 120">
+          <rect x="4" y="8" width="432" height="104" rx="10" fill="#111111" stroke="#d97706" stroke-width="5"/>
+          <circle cx="62" cy="60" r="34" fill="#d97706"/>
+          <text x="62" y="72" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="900" text-anchor="middle" fill="#111111">TP</text>
+          <text x="114" y="65" font-family="Georgia, 'Times New Roman', serif" font-size="44" font-weight="900" letter-spacing="2" fill="#ffffff">TodoPopi</text>
+          <text x="116" y="92" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" letter-spacing="3.5" fill="#fbbf24">CALIDAD Y SERVICIO OFICIAL</text>
+        </svg>`;
+        return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+      }
+
+      /* ------------------------------------------------------------------------
+         2. PLANTILLA ORIGINAL PROTEGIDA (INMUTABLE FRENTE A EDICIONES)
+         ------------------------------------------------------------------------ */
+      const PROTECTED_FACTORY_CONFIG = Object.freeze({
+        logoDataUrl: generateDefaultTodoPopiLogoDataURL(),
+        logoWidth: 190,
+        prefix: "TP",
+        nextSequence: 1,
+        companyTagline: "TodoPopi — Soluciones Comerciales y Ventas\nSan Cristóbal, República Dominicana | todopopi.com",
+        defaultIntroText: "Gracias por preferir a TodoPopi. A continuación presentamos el detalle formal de los productos y servicios correspondientes a su factura:",
+        defaultConditions: "• Entrega y coordinación a convenir.\n• Forma de pago: a convenir.\n• Verifique su mercancía al momento de la recepción.",
+        defaultCorporateMsg: "¡Gracias por su compra! En TodoPopi trabajamos cada día para brindarle calidad, cumplimiento y atención de primera.",
+        footerText: "TodoPopi • Teléfono / WhatsApp: A convenir • Web: www.todopopi.com\nSan Cristóbal / Hatillo, República Dominicana • Redes Sociales: @TodoPopi"
+      });
+
+      function createBlankInvoiceFromTemplate(config, customSequence) {
+        const todayISO = getTodayISO();
+        const seqNum = typeof customSequence === "number" ? customSequence : (config.nextSequence || 1);
+        return {
+          id: "inv_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
+          invoiceNumber: formatInvoiceNumber(config.prefix, todayISO, seqNum),
+          date: todayISO,
+          currency: "RD$",
+          clientName: "Cliente Distinguido",
+          clientAddress: "San Cristóbal, República Dominicana",
+          clientPhone: "",
+          introText: config.defaultIntroText,
+          items: [
+            {
+              id: "item_" + Date.now() + "_1",
+              qty: 1,
+              unit: "Und",
+              description: "Producto o servicio comercial TodoPopi",
+              unitPrice: 500.00
+            }
+          ],
+          discountType: "fixed",
+          discountValue: 0,
+          taxType: "percent",
+          taxValue: 0,
+          shippingValue: 0,
+          conditions: config.defaultConditions,
+          corporateMsg: config.defaultCorporateMsg,
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        };
+      }
+
+      /* ------------------------------------------------------------------------
+         3. UTILIDADES DE FECHA, NUMERACIÓN Y REDONDEO EXACTO
+         ------------------------------------------------------------------------ */
+      function getTodayISO() {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, "0");
+        const d = String(now.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+      }
+
+      function formatDisplayDate(isoDate) {
+        if (!isoDate || !isoDate.includes("-")) return isoDate || "";
+        const parts = isoDate.split("-");
+        if (parts.length !== 3) return isoDate;
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+
+      function formatInvoiceNumber(prefix, isoDate, sequenceNumber) {
+        const cleanPrefix = (prefix || "TP").trim().toUpperCase();
+        const parts = (isoDate || getTodayISO()).split("-");
+        const year = parts[0] || "2026";
+        const monthDay = (parts[1] || "10") + (parts[2] || "14");
+        const seqStr = String(Math.max(1, parseInt(sequenceNumber, 10) || 1)).padStart(3, "0");
+        return `${cleanPrefix}-${year}-${monthDay}-${seqStr}`;
+      }
+
+      // Redondeo exacto a 2 decimales usando enteros en centavos para evitar errores IEEE 754
+      function roundMoney(num) {
+        const n = Number(num);
+        if (!Number.isFinite(n)) return 0;
+        return Math.round((n + Number.EPSILON) * 100) / 100;
+      }
+
+      function formatCurrency(amount, currencySymbol) {
+        const cleanAmount = roundMoney(amount);
+        const sym = currencySymbol || "RD$";
+        return `${sym}${cleanAmount.toFixed(2)}`;
+      }
+
+      /* ------------------------------------------------------------------------
+         4. BASE DE DATOS LOCAL INDEXEDDB (SIN SERVIDOR)
+         ------------------------------------------------------------------------ */
+      const DB_NAME = "TodoPopiInvoiceStudioDB";
+      const DB_VERSION = 1;
+      let dbInstance = null;
+
+      function openDatabase() {
+        return new Promise((resolve, reject) => {
+          if (dbInstance) {
+            resolve(dbInstance);
+            return;
+          }
+          if (!window.indexedDB) {
+            reject(new Error("IndexedDB no está disponible en este navegador."));
+            return;
+          }
+          const request = window.indexedDB.open(DB_NAME, DB_VERSION);
+
+          request.onupgradeneeded = function (event) {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains("invoices")) {
+              const invStore = db.createObjectStore("invoices", { keyPath: "id" });
+              invStore.createIndex("invoiceNumber", "invoiceNumber", { unique: false });
+              invStore.createIndex("date", "date", { unique: false });
+              invStore.createIndex("updatedAt", "updatedAt", { unique: false });
+            }
+            if (!db.objectStoreNames.contains("settings")) {
+              db.createObjectStore("settings", { keyPath: "key" });
+            }
+            if (!db.objectStoreNames.contains("drafts")) {
+              db.createObjectStore("drafts", { keyPath: "key" });
+            }
+          };
+
+          request.onsuccess = function (event) {
+            dbInstance = event.target.result;
+            resolve(dbInstance);
+          };
+
+          request.onerror = function (event) {
+            reject(event.target.error || new Error("Error al abrir IndexedDB"));
+          };
+        });
+      }
+
+      async function dbPut(storeName, value) {
+        const db = await openDatabase();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(storeName, "readwrite");
+          const store = tx.objectStore(storeName);
+          store.put(value);
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = () => reject(tx.error);
+        });
+      }
+
+      async function dbGet(storeName, key) {
+        const db = await openDatabase();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(storeName, "readonly");
+          const store = tx.objectStore(storeName);
+          const req = store.get(key);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      async function dbGetAll(storeName) {
+        const db = await openDatabase();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(storeName, "readonly");
+          const store = tx.objectStore(storeName);
+          const req = store.getAll();
+          req.onsuccess = () => resolve(req.result || []);
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      async function dbDelete(storeName, key) {
+        const db = await openDatabase();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(storeName, "readwrite");
+          const store = tx.objectStore(storeName);
+          store.delete(key);
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = () => reject(tx.error);
+        });
+      }
+
+      /* ------------------------------------------------------------------------
+         5. ESTADO DE LA APLICACIÓN
+         ------------------------------------------------------------------------ */
+      let appConfig = Object.assign({}, PROTECTED_FACTORY_CONFIG);
+      let currentInvoice = createBlankInvoiceFromTemplate(appConfig, 1);
+      let savedInvoicesList = [];
+      let hasUnsavedChanges = false;
+      let pendingRecoveredDraft = null;
+
+      /* ------------------------------------------------------------------------
+         6. ELEMENTOS DEL DOM
+         ------------------------------------------------------------------------ */
+      const el = {
+        saveStatusPill: document.getElementById("save-status-pill"),
+        cdnWarning: document.getElementById("cdn-warning"),
+        draftBanner: document.getElementById("draft-banner"),
+        btnRecoverDraft: document.getElementById("btn-recover-draft"),
+        btnDiscardDraft: document.getElementById("btn-discard-draft"),
+        countInvoices: document.getElementById("count-invoices"),
+
+        // Campos de formulario de factura
+        inpNumber: document.getElementById("inp-number"),
+        inpDate: document.getElementById("inp-date"),
+        inpCurrency: document.getElementById("inp-currency"),
+        inpClientName: document.getElementById("inp-client-name"),
+        inpClientAddress: document.getElementById("inp-client-address"),
+        inpClientPhone: document.getElementById("inp-client-phone"),
+        inpIntroText: document.getElementById("inp-intro-text"),
+
+        productEditorContainer: document.getElementById("product-editor-container"),
+
+        inpDiscountType: document.getElementById("inp-discount-type"),
+        inpDiscountVal: document.getElementById("inp-discount-val"),
+        inpTaxType: document.getElementById("inp-tax-type"),
+        inpTaxVal: document.getElementById("inp-tax-val"),
+        inpShippingVal: document.getElementById("inp-shipping-val"),
+        inpConditions: document.getElementById("inp-conditions"),
+        inpCorporateMsg: document.getElementById("inp-corporate-msg"),
+
+        // Historial y filtros
+        searchQuery: document.getElementById("search-query"),
+        filterDate: document.getElementById("filter-date"),
+        sortOrder: document.getElementById("sort-order"),
+        savedInvoicesContainer: document.getElementById("saved-invoices-container"),
+
+        // Configuración
+        inpLogoUpload: document.getElementById("inp-logo-upload"),
+        inpLogoWidth: document.getElementById("inp-logo-width"),
+        lblLogoWidth: document.getElementById("lbl-logo-width"),
+        inpCfgPrefix: document.getElementById("inp-cfg-prefix"),
+        inpCfgSeq: document.getElementById("inp-cfg-seq"),
+        inpCfgTagline: document.getElementById("inp-cfg-tagline"),
+        inpCfgFooter: document.getElementById("inp-cfg-footer"),
+
+        // Opciones de exportación
+        selPaperSize: document.getElementById("sel-paper-size"),
+        selImgScale: document.getElementById("sel-img-scale"),
+        selJpgQuality: document.getElementById("sel-jpg-quality"),
+
+        // Documento de factura (#invoice-sheet)
+        invoiceViewport: document.getElementById("invoice-viewport"),
+        invoiceScaleWrapper: document.getElementById("invoice-scale-wrapper"),
+        invoiceSheet: document.getElementById("invoice-sheet"),
+        docLogoImg: document.getElementById("doc-logo-img"),
+        docCompanyTagline: document.getElementById("doc-company-tagline"),
+        docNumber: document.getElementById("doc-number"),
+        docDate: document.getElementById("doc-date"),
+        docClientName: document.getElementById("doc-client-name"),
+        docClientAddress: document.getElementById("doc-client-address"),
+        docClientPhone: document.getElementById("doc-client-phone"),
+        rowDocClientAddress: document.getElementById("row-doc-client-address"),
+        rowDocClientPhone: document.getElementById("row-doc-client-phone"),
+        docIntroText: document.getElementById("doc-intro-text"),
+        docItemsTbody: document.getElementById("doc-items-tbody"),
+        docConditions: document.getElementById("doc-conditions"),
+        docSubtotal: document.getElementById("doc-subtotal"),
+        rowDiscount: document.getElementById("row-discount"),
+        lblDocDiscount: document.getElementById("lbl-doc-discount"),
+        docDiscount: document.getElementById("doc-discount"),
+        rowTax: document.getElementById("row-tax"),
+        lblDocTax: document.getElementById("lbl-doc-tax"),
+        docTax: document.getElementById("doc-tax"),
+        rowShipping: document.getElementById("row-shipping"),
+        docShipping: document.getElementById("doc-shipping"),
+        docGrandTotal: document.getElementById("doc-grand-total"),
+        docCorporateMsg: document.getElementById("doc-corporate-msg"),
+        docFooter: document.getElementById("doc-footer"),
+
+        toast: document.getElementById("toast-notification")
+      };
+
+      /* ------------------------------------------------------------------------
+         7. NOTIFICACIONES Y ESTADO DE GUARDADO
+         ------------------------------------------------------------------------ */
+      let toastTimer = null;
+      function showToast(message) {
+        el.toast.textContent = message;
+        el.toast.style.display = "block";
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          el.toast.style.display = "none";
+        }, 3600);
+      }
+
+      function markDirtyState(isDirty) {
+        hasUnsavedChanges = isDirty;
+        if (isDirty) {
+          el.saveStatusPill.className = "status-pill status-unsaved";
+          el.saveStatusPill.textContent = "● Cambios sin guardar";
+          saveAutoDraft();
+        } else {
+          el.saveStatusPill.className = "status-pill status-saved";
+          el.saveStatusPill.textContent = "✓ Guardado al día";
+        }
+      }
+
+      async function saveAutoDraft() {
+        try {
+          await dbPut("drafts", {
+            key: "active_draft",
+            invoice: JSON.parse(JSON.stringify(currentInvoice)),
+            timestamp: Date.now()
+          });
+        } catch (e) {
+          // Silencioso si falla borrador automático
+        }
+      }
+
+      async function clearAutoDraft() {
+        try {
+          await dbDelete("drafts", "active_draft");
+        } catch (e) {}
+      }
+
+      /* ------------------------------------------------------------------------
+         8. CÁLCULOS AUTOMÁTICOS DE LA FACTURA
+         ------------------------------------------------------------------------ */
+      function calculateInvoiceTotals(invoice) {
+        let itemsSubtotal = 0;
+
+        const computedItems = (invoice.items || []).map((item) => {
+          const qty = Math.max(0, Number(item.qty) || 0);
+          const price = Math.max(0, Number(item.unitPrice) || 0);
+          const lineTotal = roundMoney(qty * price);
+          itemsSubtotal = roundMoney(itemsSubtotal + lineTotal);
+          return Object.assign({}, item, {
+            qty,
+            unitPrice: price,
+            subtotal: lineTotal
+          });
+        });
+
+        // Descuento
+        const rawDiscountVal = Math.max(0, Number(invoice.discountValue) || 0);
+        let discountAmount = 0;
+        if (rawDiscountVal > 0) {
+          if (invoice.discountType === "percent") {
+            discountAmount = roundMoney(itemsSubtotal * (Math.min(100, rawDiscountVal) / 100));
+          } else {
+            discountAmount = roundMoney(rawDiscountVal);
+          }
+        }
+        if (discountAmount > itemsSubtotal) {
+          discountAmount = itemsSubtotal;
+        }
+
+        const taxableBase = roundMoney(itemsSubtotal - discountAmount);
+
+        // Impuestos
+        const rawTaxVal = Math.max(0, Number(invoice.taxValue) || 0);
+        let taxAmount = 0;
+        if (rawTaxVal > 0) {
+          if (invoice.taxType === "percent") {
+            taxAmount = roundMoney(taxableBase * (rawTaxVal / 100));
+          } else {
+            taxAmount = roundMoney(rawTaxVal);
+          }
+        }
+
+        // Envío / cargos adicionales
+        const shippingAmount = roundMoney(Math.max(0, Number(invoice.shippingValue) || 0));
+
+        // Total General = Suma de subtotales - descuentos + impuestos + cargos adicionales
+        const grandTotal = roundMoney(taxableBase + taxAmount + shippingAmount);
+
+        return {
+          computedItems,
+          itemsSubtotal,
+          discountAmount,
+          taxAmount,
+          shippingAmount,
+          grandTotal
+        };
+      }
+
+      /* ------------------------------------------------------------------------
+         9. RENDERIZADO DE LA FACTURA ORIGINAL (#invoice-sheet)
+         ------------------------------------------------------------------------ */
+      function renderInvoiceSheet() {
+        const calc = calculateInvoiceTotals(currentInvoice);
+        const cur = currentInvoice.currency || "RD$";
+
+        // Configuración visual y corporativa
+        el.docLogoImg.src = appConfig.logoDataUrl || PROTECTED_FACTORY_CONFIG.logoDataUrl;
+        el.docLogoImg.style.width = (appConfig.logoWidth || 190) + "px";
+        el.docCompanyTagline.textContent = appConfig.companyTagline || "";
+        el.docFooter.textContent = appConfig.footerText || "";
+
+        // Encabezado
+        el.docNumber.textContent = currentInvoice.invoiceNumber || "S/N";
+        el.docDate.textContent = formatDisplayDate(currentInvoice.date);
+
+        // Cliente
+        el.docClientName.textContent = currentInvoice.clientName || "Cliente al Contado";
+
+        if (currentInvoice.clientAddress && currentInvoice.clientAddress.trim() !== "") {
+          el.rowDocClientAddress.style.display = "flex";
+          el.docClientAddress.textContent = currentInvoice.clientAddress;
+        } else {
+          el.rowDocClientAddress.style.display = "none";
+        }
+
+        if (currentInvoice.clientPhone && currentInvoice.clientPhone.trim() !== "") {
+          el.rowDocClientPhone.style.display = "flex";
+          el.docClientPhone.textContent = currentInvoice.clientPhone;
+        } else {
+          el.rowDocClientPhone.style.display = "none";
+        }
+
+        // Texto introductorio
+        el.docIntroText.textContent = currentInvoice.introText || "";
+        el.docIntroText.style.display = currentInvoice.introText && currentInvoice.introText.trim() ? "block" : "none";
+
+        // Tabla de productos
+        el.docItemsTbody.innerHTML = "";
+        calc.computedItems.forEach((item) => {
+          const tr = document.createElement("tr");
+
+          const tdCant = document.createElement("td");
+          tdCant.className = "col-cant";
+          tdCant.textContent = Number.isInteger(item.qty) ? String(item.qty) : item.qty.toFixed(2);
+
+          const tdUnid = document.createElement("td");
+          tdUnid.className = "col-unid";
+          tdUnid.textContent = item.unit || "Und";
+
+          const tdDesc = document.createElement("td");
+          tdDesc.className = "col-desc";
+          tdDesc.textContent = item.description || "-";
+
+          const tdUnit = document.createElement("td");
+          tdUnit.className = "col-unit";
+          tdUnit.textContent = formatCurrency(item.unitPrice, cur);
+
+          const tdSub = document.createElement("td");
+          tdSub.className = "col-sub";
+          tdSub.textContent = formatCurrency(item.subtotal, cur);
+
+          tr.appendChild(tdCant);
+          tr.appendChild(tdUnid);
+          tr.appendChild(tdDesc);
+          tr.appendChild(tdUnit);
+          tr.appendChild(tdSub);
+          el.docItemsTbody.appendChild(tr);
+        });
+
+        // Totales (oculta impuestos, descuentos o envío si son 0)
+        el.docSubtotal.textContent = formatCurrency(calc.itemsSubtotal, cur);
+
+        if (calc.discountAmount > 0) {
+          el.rowDiscount.style.display = "table-row";
+          el.lblDocDiscount.textContent =
+            currentInvoice.discountType === "percent"
+              ? `DESCUENTO (${currentInvoice.discountValue}%):`
+              : "DESCUENTO:";
+          el.docDiscount.textContent = "-" + formatCurrency(calc.discountAmount, cur);
+        } else {
+          el.rowDiscount.style.display = "none";
+        }
+
+        if (calc.taxAmount > 0) {
+          el.rowTax.style.display = "table-row";
+          el.lblDocTax.textContent =
+            currentInvoice.taxType === "percent"
+              ? `IMPUESTOS (${currentInvoice.taxValue}%):`
+              : "IMPUESTOS:";
+          el.docTax.textContent = formatCurrency(calc.taxAmount, cur);
+        } else {
+          el.rowTax.style.display = "none";
+        }
+
+        if (calc.shippingAmount > 0) {
+          el.rowShipping.style.display = "table-row";
+          el.docShipping.textContent = formatCurrency(calc.shippingAmount, cur);
+        } else {
+          el.rowShipping.style.display = "none";
+        }
+
+        el.docGrandTotal.textContent = formatCurrency(calc.grandTotal, cur);
+
+        // Condiciones y mensaje corporativo
+        el.docConditions.textContent = currentInvoice.conditions || "";
+        el.docCorporateMsg.textContent = currentInvoice.corporateMsg || "";
+        el.docCorporateMsg.style.display =
+          currentInvoice.corporateMsg && currentInvoice.corporateMsg.trim() ? "block" : "none";
+      }
+
+      /* ------------------------------------------------------------------------
+         10. SINCRONIZACIÓN ENTRE FORMULARIO Y MODELO DE DATOS
+         ------------------------------------------------------------------------ */
+      function populateFormFromCurrentInvoice() {
+        el.inpNumber.value = currentInvoice.invoiceNumber || "";
+        el.inpDate.value = currentInvoice.date || getTodayISO();
+        el.inpCurrency.value = currentInvoice.currency || "RD$";
+        el.inpClientName.value = currentInvoice.clientName || "";
+        el.inpClientAddress.value = currentInvoice.clientAddress || "";
+        el.inpClientPhone.value = currentInvoice.clientPhone || "";
+        el.inpIntroText.value = currentInvoice.introText || "";
+
+        el.inpDiscountType.value = currentInvoice.discountType || "fixed";
+        el.inpDiscountVal.value = currentInvoice.discountValue || 0;
+        el.inpTaxType.value = currentInvoice.taxType || "percent";
+        el.inpTaxVal.value = currentInvoice.taxValue || 0;
+        el.inpShippingVal.value = currentInvoice.shippingValue || 0;
+        el.inpConditions.value = currentInvoice.conditions || "";
+        el.inpCorporateMsg.value = currentInvoice.corporateMsg || "";
+
+        renderProductEditorCards();
+        renderInvoiceSheet();
+      }
+
+      function populateConfigForm() {
+        el.inpLogoWidth.value = appConfig.logoWidth || 190;
+        el.lblLogoWidth.textContent = appConfig.logoWidth || 190;
+        el.inpCfgPrefix.value = appConfig.prefix || "TP";
+        el.inpCfgSeq.value = appConfig.nextSequence || 1;
+        el.inpCfgTagline.value = appConfig.companyTagline || "";
+        el.inpCfgFooter.value = appConfig.footerText || "";
+      }
+
+      /* ------------------------------------------------------------------------
+         11. EDITOR DE PRODUCTOS (AGREGAR, EDITAR, DUPLICAR, REORDENAR, ELIMINAR)
+         ------------------------------------------------------------------------ */
+      function renderProductEditorCards() {
+        el.productEditorContainer.innerHTML = "";
+        const cur = currentInvoice.currency || "RD$";
+
+        currentInvoice.items.forEach((item, index) => {
+          const card = document.createElement("div");
+          card.className = "product-card";
+
+          const lineSubtotal = roundMoney((Number(item.qty) || 0) * (Number(item.unitPrice) || 0));
+
+          card.innerHTML = `
+            <div class="product-card-header">
+              <span class="product-index-badge">Ítem #${index + 1}</span>
+              <div class="product-card-actions">
+                <button type="button" class="btn btn-outline btn-sm" data-action="up" data-idx="${index}" title="Subir" ${index === 0 ? "disabled" : ""}>↑</button>
+                <button type="button" class="btn btn-outline btn-sm" data-action="down" data-idx="${index}" title="Bajar" ${index === currentInvoice.items.length - 1 ? "disabled" : ""}>↓</button>
+                <button type="button" class="btn btn-outline btn-sm" data-action="dup" data-idx="${index}" title="Duplicar ítem">📋 Duplicar</button>
+                <button type="button" class="btn btn-danger btn-sm" data-action="del" data-idx="${index}" title="Eliminar ítem">✕</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Descripción del Producto o Servicio</label>
+              <textarea rows="2" data-field="description" data-idx="${index}" placeholder="Descripción detallada">${escapeHtml(item.description || "")}</textarea>
+            </div>
+            <div class="product-card-grid">
+              <div class="form-group">
+                <label>Cantidad</label>
+                <input type="number" step="any" min="0" data-field="qty" data-idx="${index}" value="${item.qty}" />
+              </div>
+              <div class="form-group">
+                <label>Unidad</label>
+                <input type="text" data-field="unit" data-idx="${index}" value="${escapeHtml(item.unit || "Und")}" placeholder="Und, Paq, Servicio..." />
+              </div>
+              <div class="form-group">
+                <label>Precio Unitario (${cur})</label>
+                <input type="number" step="0.01" min="0" data-field="unitPrice" data-idx="${index}" value="${item.unitPrice}" />
+              </div>
+            </div>
+            <div class="product-subtotal-preview" id="item-sub-preview-${index}">
+              Subtotal Ítem: ${formatCurrency(lineSubtotal, cur)}
+            </div>
+          `;
+
+          el.productEditorContainer.appendChild(card);
+        });
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      // Eventos en tiempo real para productos
+      el.productEditorContainer.addEventListener("input", function (e) {
+        const target = e.target;
+        const idx = parseInt(target.getAttribute("data-idx"), 10);
+        const field = target.getAttribute("data-field");
+        if (Number.isNaN(idx) || !field || !currentInvoice.items[idx]) return;
+
+        if (field === "qty" || field === "unitPrice") {
+          currentInvoice.items[idx][field] = Math.max(0, parseFloat(target.value) || 0);
+        } else {
+          currentInvoice.items[idx][field] = target.value;
+        }
+
+        const subEl = document.getElementById(`item-sub-preview-${idx}`);
+        if (subEl) {
+          const sub = roundMoney(
+            (Number(currentInvoice.items[idx].qty) || 0) *
+              (Number(currentInvoice.items[idx].unitPrice) || 0)
+          );
+          subEl.textContent = `Subtotal Ítem: ${formatCurrency(sub, currentInvoice.currency)}`;
+        }
+
+        currentInvoice.updatedAt = Date.now();
+        markDirtyState(true);
+        renderInvoiceSheet();
+      });
+
+      // Botones de acciones de productos (Subir, Bajar, Duplicar, Eliminar)
+      el.productEditorContainer.addEventListener("click", function (e) {
+        const btn = e.target.closest("button[data-action]");
+        if (!btn) return;
+        const action = btn.getAttribute("data-action");
+        const idx = parseInt(btn.getAttribute("data-idx"), 10);
+        if (Number.isNaN(idx)) return;
+
+        if (action === "up" && idx > 0) {
+          const temp = currentInvoice.items[idx - 1];
+          currentInvoice.items[idx - 1] = currentInvoice.items[idx];
+          currentInvoice.items[idx] = temp;
+        } else if (action === "down" && idx < currentInvoice.items.length - 1) {
+          const temp = currentInvoice.items[idx + 1];
+          currentInvoice.items[idx + 1] = currentInvoice.items[idx];
+          currentInvoice.items[idx] = temp;
+        } else if (action === "dup") {
+          const clone = Object.assign({}, currentInvoice.items[idx], {
+            id: "item_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6)
+          });
+          currentInvoice.items.splice(idx + 1, 0, clone);
+        } else if (action === "del") {
+          if (currentInvoice.items.length <= 1) {
+            showToast("La factura debe tener al menos 1 producto.");
+            return;
+          }
+          currentInvoice.items.splice(idx, 1);
+        }
+
+        currentInvoice.updatedAt = Date.now();
+        markDirtyState(true);
+        renderProductEditorCards();
+        renderInvoiceSheet();
+      });
+
+      function addNewProductRow() {
+        currentInvoice.items.push({
+          id: "item_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
+          qty: 1,
+          unit: "Und",
+          description: "Nuevo producto o servicio",
+          unitPrice: 0
+        });
+        currentInvoice.updatedAt = Date.now();
+        markDirtyState(true);
+        renderProductEditorCards();
+        renderInvoiceSheet();
+      }
+
+      document.getElementById("btn-add-item").addEventListener("click", addNewProductRow);
+      document.getElementById("btn-add-item-bottom").addEventListener("click", addNewProductRow);
+
+      /* ------------------------------------------------------------------------
+         12. EVENTOS EN TIEMPO REAL DE LOS CAMPOS GENERALES
+         ------------------------------------------------------------------------ */
+      function bindLiveField(inputEl, propName, isNumeric) {
+        inputEl.addEventListener("input", function () {
+          currentInvoice[propName] = isNumeric
+            ? Math.max(0, parseFloat(inputEl.value) || 0)
+            : inputEl.value;
+          currentInvoice.updatedAt = Date.now();
+          markDirtyState(true);
+          if (propName === "currency") {
+            renderProductEditorCards();
+          }
+          renderInvoiceSheet();
+        });
+      }
+
+      bindLiveField(el.inpNumber, "invoiceNumber", false);
+      bindLiveField(el.inpDate, "date", false);
+      bindLiveField(el.inpCurrency, "currency", false);
+      bindLiveField(el.inpClientName, "clientName", false);
+      bindLiveField(el.inpClientAddress, "clientAddress", false);
+      bindLiveField(el.inpClientPhone, "clientPhone", false);
+      bindLiveField(el.inpIntroText, "introText", false);
+      bindLiveField(el.inpDiscountType, "discountType", false);
+      bindLiveField(el.inpDiscountVal, "discountValue", true);
+      bindLiveField(el.inpTaxType, "taxType", false);
+      bindLiveField(el.inpTaxVal, "taxValue", true);
+      bindLiveField(el.inpShippingVal, "shippingValue", true);
+      bindLiveField(el.inpConditions, "conditions", false);
+      bindLiveField(el.inpCorporateMsg, "corporateMsg", false);
+
+      /* ------------------------------------------------------------------------
+         13. NUMERACIÓN AUTOMÁTICA SIN DUPLICADOS
+         ------------------------------------------------------------------------ */
+      function generateNextUniqueInvoiceNumber(dateStr) {
+        const existingNumbers = new Set(savedInvoicesList.map((inv) => inv.invoiceNumber));
+        let seq = Math.max(1, parseInt(appConfig.nextSequence, 10) || 1);
+        let candidate = formatInvoiceNumber(appConfig.prefix, dateStr || currentInvoice.date, seq);
+        while (existingNumbers.has(candidate)) {
+          seq++;
+          candidate = formatInvoiceNumber(appConfig.prefix, dateStr || currentInvoice.date, seq);
+        }
+        return { number: candidate, usedSeq: seq };
+      }
+
+      document.getElementById("btn-gen-number").addEventListener("click", function () {
+        const res = generateNextUniqueInvoiceNumber(currentInvoice.date);
+        currentInvoice.invoiceNumber = res.number;
+        el.inpNumber.value = res.number;
+        markDirtyState(true);
+        renderInvoiceSheet();
+        showToast("Número generado: " + res.number);
+      });
+
+      /* ------------------------------------------------------------------------
+         14. GUARDAR, ACTUALIZAR, DUPLICAR Y GESTIONAR EN INDEXEDDB
+         ------------------------------------------------------------------------ */
+      async function refreshSavedInvoicesList() {
+        savedInvoicesList = await dbGetAll("invoices");
+        el.countInvoices.textContent = String(savedInvoicesList.length);
+        renderSavedInvoicesHistory();
+      }
+
+      async function saveCurrentInvoice(asNewCopy) {
+        if (!currentInvoice.invoiceNumber || !currentInvoice.invoiceNumber.trim()) {
+          showToast("⚠️ El número de factura no puede estar vacío.");
+          return;
+        }
+
+        if (asNewCopy) {
+          currentInvoice.id = "inv_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
+          const dupExists = savedInvoicesList.some(
+            (inv) => inv.invoiceNumber === currentInvoice.invoiceNumber
+          );
+          if (dupExists) {
+            const nextObj = generateNextUniqueInvoiceNumber(currentInvoice.date);
+            currentInvoice.invoiceNumber = nextObj.number;
+            appConfig.nextSequence = nextObj.usedSeq + 1;
+            await saveConfigToDB();
+          }
+        } else {
+          // Verificar que el número no esté duplicado en otra factura distinta
+          const conflict = savedInvoicesList.find(
+            (inv) => inv.invoiceNumber === currentInvoice.invoiceNumber && inv.id !== currentInvoice.id
+          );
+          if (conflict) {
+            const confirmNumber = window.confirm(
+              `Ya existe otra factura guardada con el número ${currentInvoice.invoiceNumber}. ¿Deseas generar el siguiente número disponible automáticamente?`
+            );
+            if (confirmNumber) {
+              const nextObj = generateNextUniqueInvoiceNumber(currentInvoice.date);
+              currentInvoice.invoiceNumber = nextObj.number;
+              appConfig.nextSequence = nextObj.usedSeq + 1;
+            } else {
+              return;
+            }
+          }
+        }
+
+        currentInvoice.updatedAt = Date.now();
+        await dbPut("invoices", JSON.parse(JSON.stringify(currentInvoice)));
+
+        // Actualizar secuencia si corresponde
+        const matchSeq = currentInvoice.invoiceNumber.match(/-(\d+)$/);
+        if (matchSeq) {
+          const numVal = parseInt(matchSeq[1], 10);
+          if (numVal >= (appConfig.nextSequence || 1)) {
+            appConfig.nextSequence = numVal + 1;
+            el.inpCfgSeq.value = appConfig.nextSequence;
+            await saveConfigToDB();
+          }
+        }
+
+        await clearAutoDraft();
+        markDirtyState(false);
+        populateFormFromCurrentInvoice();
+        await refreshSavedInvoicesList();
+        showToast("✅ Factura " + currentInvoice.invoiceNumber + " guardada correctamente.");
+      }
+
+      async function createNewInvoiceFlow() {
+        if (hasUnsavedChanges) {
+          const proceed = window.confirm("Tienes cambios sin guardar en la factura actual. ¿Deseas crear una factura nueva de todos modos?");
+          if (!proceed) return;
+        }
+        const nextObj = generateNextUniqueInvoiceNumber(getTodayISO());
+        currentInvoice = createBlankInvoiceFromTemplate(appConfig, nextObj.usedSeq);
+        currentInvoice.invoiceNumber = nextObj.number;
+        markDirtyState(false);
+        populateFormFromCurrentInvoice();
+        showToast("📄 Nueva factura lista: " + currentInvoice.invoiceNumber);
+      }
+
+      async function duplicateCurrentInvoiceFlow() {
+        const clone = JSON.parse(JSON.stringify(currentInvoice));
+        clone.id = "inv_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
+        const nextObj = generateNextUniqueInvoiceNumber(clone.date);
+        clone.invoiceNumber = nextObj.number;
+        clone.createdAt = Date.now();
+        clone.updatedAt = Date.now();
+        currentInvoice = clone;
+        markDirtyState(true);
+        populateFormFromCurrentInvoice();
+        showToast("📋 Factura duplicada con nuevo número: " + currentInvoice.invoiceNumber);
+      }
+
+      document.getElementById("btn-save-invoice").addEventListener("click", () => saveCurrentInvoice(false));
+      document.getElementById("btn-top-save").addEventListener("click", () => saveCurrentInvoice(false));
+      document.getElementById("btn-save-as-new").addEventListener("click", () => saveCurrentInvoice(true));
+      document.getElementById("btn-new-invoice").addEventListener("click", createNewInvoiceFlow);
+      document.getElementById("btn-top-new").addEventListener("click", createNewInvoiceFlow);
+      document.getElementById("btn-duplicate-current").addEventListener("click", duplicateCurrentInvoiceFlow);
+
+      /* ------------------------------------------------------------------------
+         15. HISTORIAL, BÚSQUEDA, FILTRADO Y COPIAS DE SEGURIDAD JSON
+         ------------------------------------------------------------------------ */
+      function renderSavedInvoicesHistory() {
+        el.savedInvoicesContainer.innerHTML = "";
+        const q = (el.searchQuery.value || "").trim().toLowerCase();
+        const fDate = el.filterDate.value || "";
+        const sortDir = el.sortOrder.value || "desc";
+
+        let filtered = savedInvoicesList.filter((inv) => {
+          const matchesQuery =
+            !q ||
+            (inv.clientName && inv.clientName.toLowerCase().includes(q)) ||
+            (inv.invoiceNumber && inv.invoiceNumber.toLowerCase().includes(q));
+          const matchesDate = !fDate || inv.date === fDate;
+          return matchesQuery && matchesDate;
+        });
+
+        filtered.sort((a, b) => {
+          const da = a.date || "";
+          const db = b.date || "";
+          if (da !== db) {
+            return sortDir === "desc" ? db.localeCompare(da) : da.localeCompare(db);
+          }
+          return sortDir === "desc" ? (b.updatedAt || 0) - (a.updatedAt || 0) : (a.updatedAt || 0) - (b.updatedAt || 0);
+        });
+
+        if (filtered.length === 0) {
+          el.savedInvoicesContainer.innerHTML = `<div style="padding:16px; text-align:center; color:#6b7280; font-size:0.88rem;">No se encontraron facturas guardadas con esos criterios.</div>`;
+          return;
+        }
+
+        filtered.forEach((inv) => {
+          const totals = calculateInvoiceTotals(inv);
+          const itemDiv = document.createElement("div");
+          itemDiv.className = "saved-invoice-item" + (inv.id === currentInvoice.id ? " active-invoice" : "");
+
+          itemDiv.innerHTML = `
+            <div class="saved-invoice-top">
+              <div>
+                <div class="saved-invoice-num">${escapeHtml(inv.invoiceNumber)}</div>
+                <div class="saved-invoice-meta">👤 ${escapeHtml(inv.clientName || "Sin nombre")} • 📅 ${formatDisplayDate(inv.date)}</div>
+              </div>
+              <div class="saved-invoice-total">${formatCurrency(totals.grandTotal, inv.currency)}</div>
+            </div>
+            <div class="saved-invoice-actions">
+              <button type="button" class="btn btn-primary btn-sm" data-hist-action="open" data-id="${inv.id}">📂 Abrir</button>
+              <button type="button" class="btn btn-outline btn-sm" data-hist-action="dup" data-id="${inv.id}">📋 Duplicar</button>
+              <button type="button" class="btn btn-danger btn-sm" data-hist-action="del" data-id="${inv.id}">🗑️ Eliminar</button>
+            </div>
+          `;
+          el.savedInvoicesContainer.appendChild(itemDiv);
+        });
+      }
+
+      el.searchQuery.addEventListener("input", renderSavedInvoicesHistory);
+      el.filterDate.addEventListener("change", renderSavedInvoicesHistory);
+      el.sortOrder.addEventListener("change", renderSavedInvoicesHistory);
+      document.getElementById("btn-clear-filters").addEventListener("click", function () {
+        el.searchQuery.value = "";
+        el.filterDate.value = "";
+        el.sortOrder.value = "desc";
+        renderSavedInvoicesHistory();
+      });
+
+      el.savedInvoicesContainer.addEventListener("click", async function (e) {
+        const btn = e.target.closest("button[data-hist-action]");
+        if (!btn) return;
+        const action = btn.getAttribute("data-hist-action");
+        const id = btn.getAttribute("data-id");
+        const targetInv = savedInvoicesList.find((i) => i.id === id);
+        if (!targetInv) return;
+
+        if (action === "open") {
+          if (hasUnsavedChanges) {
+            const ok = window.confirm("Tienes cambios sin guardar. ¿Deseas abrir esta factura y descartar los cambios actuales?");
+            if (!ok) return;
+          }
+          currentInvoice = JSON.parse(JSON.stringify(targetInv));
+          markDirtyState(false);
+          populateFormFromCurrentInvoice();
+          renderSavedInvoicesHistory();
+          showToast("📂 Factura abierta: " + currentInvoice.invoiceNumber);
+        } else if (action === "dup") {
+          const clone = JSON.parse(JSON.stringify(targetInv));
+          clone.id = "inv_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
+          const nextObj = generateNextUniqueInvoiceNumber(clone.date);
+          clone.invoiceNumber = nextObj.number;
+          currentInvoice = clone;
+          markDirtyState(true);
+          populateFormFromCurrentInvoice();
+          showToast("📋 Factura duplicada: " + currentInvoice.invoiceNumber);
+        } else if (action === "del") {
+          const confirmDel = window.confirm(`¿Estás seguro de eliminar permanentemente la factura ${targetInv.invoiceNumber} de ${targetInv.clientName}?`);
+          if (!confirmDel) return;
+          await dbDelete("invoices", id);
+          await refreshSavedInvoicesList();
+          showToast("🗑️ Factura eliminada.");
+        }
+      });
+
+      // Exportar e Importar Copia de Seguridad Completa (JSON)
+      document.getElementById("btn-export-backup").addEventListener("click", async function () {
+        const allInvoices = await dbGetAll("invoices");
+        const backupPayload = {
+          app: "TodoPopi Invoice Studio",
+          version: "1.0",
+          exportedAt: new Date().toISOString(),
+          settings: appConfig,
+          invoices: allInvoices
+        };
+        downloadJsonFile(backupPayload, `TodoPopi_Backup_${getTodayISO()}.json`);
+        showToast("⬇️ Copia de seguridad JSON descargada.");
+      });
+
+      document.getElementById("inp-import-backup").addEventListener("change", function (e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async function (evt) {
+          try {
+            const parsed = JSON.parse(evt.target.result);
+            if (parsed.settings && typeof parsed.settings === "object") {
+              appConfig = Object.assign({}, PROTECTED_FACTORY_CONFIG, parsed.settings);
+              await saveConfigToDB();
+              populateConfigForm();
+            }
+            if (Array.isArray(parsed.invoices)) {
+              for (const inv of parsed.invoices) {
+                if (inv && inv.id && inv.invoiceNumber) {
+                  await dbPut("invoices", inv);
+                }
+              }
+            }
+            await refreshSavedInvoicesList();
+            renderInvoiceSheet();
+            showToast("✅ Copia de seguridad importada con éxito.");
+          } catch (err) {
+            showToast("❌ Archivo JSON inválido o corrupto.");
+          }
+          e.target.value = "";
+        };
+        reader.readAsText(file);
+      });
+
+      function downloadJsonFile(obj, filename) {
+        const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      /* ------------------------------------------------------------------------
+         16. LOGOTIPO Y CONFIGURACIÓN DEL NEGOCIO
+         ------------------------------------------------------------------------ */
+      async function saveConfigToDB() {
+        await dbPut("settings", {
+          key: "main_config",
+          data: JSON.parse(JSON.stringify(appConfig))
+        });
+      }
+
+      el.inpLogoUpload.addEventListener("change", function (e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async function (evt) {
+          appConfig.logoDataUrl = evt.target.result;
+          await saveConfigToDB();
+          renderInvoiceSheet();
+          showToast("🖼️ Logotipo cargado y guardado en almacenamiento local.");
+        };
+        reader.readAsDataURL(file);
+      });
+
+      el.inpLogoWidth.addEventListener("input", function () {
+        const w = parseInt(el.inpLogoWidth.value, 10) || 190;
+        appConfig.logoWidth = w;
+        el.lblLogoWidth.textContent = String(w);
+        renderInvoiceSheet();
+      });
+
+      document.getElementById("btn-restore-default-logo").addEventListener("click", async function () {
+        appConfig.logoDataUrl = PROTECTED_FACTORY_CONFIG.logoDataUrl;
+        appConfig.logoWidth = PROTECTED_FACTORY_CONFIG.logoWidth;
+        populateConfigForm();
+        await saveConfigToDB();
+        renderInvoiceSheet();
+        showToast("Logotipo original de TodoPopi restaurado.");
+      });
+
+      document.getElementById("btn-save-config").addEventListener("click", async function () {
+        appConfig.prefix = (el.inpCfgPrefix.value || "TP").trim().toUpperCase();
+        appConfig.nextSequence = Math.max(1, parseInt(el.inpCfgSeq.value, 10) || 1);
+        appConfig.companyTagline = el.inpCfgTagline.value;
+        appConfig.footerText = el.inpCfgFooter.value;
+        await saveConfigToDB();
+        renderInvoiceSheet();
+        showToast("✅ Configuración comercial guardada.");
+      });
+
+      document.getElementById("btn-export-config-json").addEventListener("click", function () {
+        downloadJsonFile(
+          { app: "TodoPopi Config", settings: appConfig },
+          `TodoPopi_Config_${getTodayISO()}.json`
+        );
+        showToast("⬇️ Configuración exportada.");
+      });
+
+      document.getElementById("btn-reset-factory").addEventListener("click", async function () {
+        const ok = window.confirm("¿Deseas restaurar la plantilla y configuración a los valores originales de TodoPopi? (Tus facturas guardadas no se borrarán).");
+        if (!ok) return;
+        appConfig = Object.assign({}, PROTECTED_FACTORY_CONFIG);
+        await saveConfigToDB();
+        populateConfigForm();
+        currentInvoice.introText = appConfig.defaultIntroText;
+        currentInvoice.conditions = appConfig.defaultConditions;
+        currentInvoice.corporateMsg = appConfig.defaultCorporateMsg;
+        populateFormFromCurrentInvoice();
+        showToast("🔄 Plantilla original restaurada.");
+      });
+
+      /* ------------------------------------------------------------------------
+         17. EXPORTACIÓN A PDF, PNG, JPG E IMPRESIÓN
+         ------------------------------------------------------------------------ */
+      async function waitForAssetsReady() {
+        if (document.fonts && document.fonts.ready) {
+          await document.fonts.ready;
+        }
+        const imgs = Array.from(el.invoiceSheet.querySelectorAll("img"));
+        await Promise.all(
+          imgs.map((img) => {
+            if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+            return new Promise((res) => {
+              img.onload = res;
+              img.onerror = res;
+            });
+          })
+        );
+      }
+
+      async function captureInvoiceCanvas(scaleFactor) {
+        if (typeof window.html2canvas !== "function") {
+          throw new Error("La biblioteca html2canvas no está disponible. Verifica tu conexión a Internet.");
+        }
+
+        await waitForAssetsReady();
+
+        // Guardar transformación responsive actual y restablecer a escala 1:1 para captura limpia
+        const prevTransform = el.invoiceScaleWrapper.style.transform;
+        const prevMarginBottom = el.invoiceScaleWrapper.style.marginBottom;
+        el.invoiceScaleWrapper.style.transform = "none";
+        el.invoiceScaleWrapper.style.marginBottom = "0px";
+
+        try {
+          const canvas = await window.html2canvas(el.invoiceSheet, {
+            scale: scaleFactor || 2,
+            useCORS: true,
+            allowTaint: false,
+            backgroundColor: "#ffffff",
+            logging: false,
+            windowWidth: 1200
+          });
+          return canvas;
+        } finally {
+          el.invoiceScaleWrapper.style.transform = prevTransform;
+          el.invoiceScaleWrapper.style.marginBottom = prevMarginBottom;
+        }
+      }
+
+      // EXPORTAR PNG
+      document.getElementById("btn-export-png").addEventListener("click", async function () {
+        try {
+          showToast("⏳ Generando imagen PNG de alta calidad...");
+          const scale = parseInt(el.selImgScale.value, 10) || 2;
+          const canvas = await captureInvoiceCanvas(scale);
+          const dataUrl = canvas.toDataURL("image/png");
+          triggerDataUrlDownload(dataUrl, `${currentInvoice.invoiceNumber || "Factura_TodoPopi"}.png`);
+          showToast("✅ Imagen PNG exportada.");
+        } catch (err) {
+          alert("Error al exportar a PNG: " + err.message);
+        }
+      });
+
+      // EXPORTAR JPG
+      document.getElementById("btn-export-jpg").addEventListener("click", async function () {
+        try {
+          showToast("⏳ Generando imagen JPG...");
+          const scale = parseInt(el.selImgScale.value, 10) || 2;
+          const quality = parseFloat(el.selJpgQuality.value) || 0.95;
+          const canvas = await captureInvoiceCanvas(scale);
+          const dataUrl = canvas.toDataURL("image/jpeg", quality);
+          triggerDataUrlDownload(dataUrl, `${currentInvoice.invoiceNumber || "Factura_TodoPopi"}.jpg`);
+          showToast("✅ Imagen JPG exportada.");
+        } catch (err) {
+          alert("Error al exportar a JPG: " + err.message);
+        }
+      });
+
+      // EXPORTAR PDF (Controlando dimensiones, márgenes y paginación sin páginas en blanco)
+      document.getElementById("btn-export-pdf").addEventListener("click", async function () {
+        try {
+          if (!window.jspdf || !window.jspdf.jsPDF) {
+            throw new Error("La biblioteca jsPDF no está disponible. Verifica tu conexión o usa el botón IMPRIMIR FACTURA.");
+          }
+          showToast("⏳ Generando PDF oficial de TodoPopi...");
+
+          const paperFormat = el.selPaperSize.value || "letter";
+          const scale = parseInt(el.selImgScale.value, 10) || 2;
+          const canvas = await captureInvoiceCanvas(scale);
+          const imgData = canvas.toDataURL("image/png");
+
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF({
+            orientation: "portrait",
+            unit: "mm",
+            format: paperFormat,
+            compress: true
+          });
+
+          const pageWidth = pdf.internal.pageSize.getWidth();
+          const pageHeight = pdf.internal.pageSize.getHeight();
+          const margin = 8; // margen limpio de 8 mm
+          const usableWidth = pageWidth - margin * 2;
+          const usableHeight = pageHeight - margin * 2;
+
+          const imgWidth = usableWidth;
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+          if (imgHeight <= usableHeight) {
+            // Cabe en una sola página sin hojas en blanco adicionales
+            pdf.addImage(imgData, "PNG", margin, margin, imgWidth, imgHeight, undefined, "FAST");
+          } else {
+            // Si hay muchos productos y supera 1 página, divide limpiamente en páginas sucesivas
+            let heightLeft = imgHeight;
+            let position = margin;
+
+            pdf.addImage(imgData, "PNG", margin, position, imgWidth, imgHeight, undefined, "FAST");
+            heightLeft -= usableHeight;
+
+            while (heightLeft > 2) {
+              position = heightLeft - imgHeight + margin;
+              pdf.addPage(paperFormat, "portrait");
+              pdf.addImage(imgData, "PNG", margin, position, imgWidth, imgHeight, undefined, "FAST");
+              heightLeft -= usableHeight;
+            }
+          }
+
+          pdf.save(`${currentInvoice.invoiceNumber || "Factura_TodoPopi"}.pdf`);
+          showToast("✅ PDF exportado correctamente.");
+        } catch (err) {
+          alert("Error al exportar PDF: " + err.message);
+        }
+      });
+
+      // IMPRIMIR FACTURA
+      document.getElementById("btn-print-invoice").addEventListener("click", async function () {
+        await waitForAssetsReady();
+        window.print();
+      });
+
+      function triggerDataUrlDownload(dataUrl, filename) {
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+
+      /* ------------------------------------------------------------------------
+         18. NAVEGACIÓN POR PESTAÑAS Y ESCALADO RESPONSIVE DE LA HOJA EN MÓVIL
+         ------------------------------------------------------------------------ */
+      const tabButtons = document.querySelectorAll(".nav-tab");
+      const tabPanes = document.querySelectorAll(".tab-pane");
+
+      tabButtons.forEach((btn) => {
+        btn.addEventListener("click", function () {
+          const targetId = btn.getAttribute("data-tab");
+          tabButtons.forEach((b) => b.classList.remove("active"));
+          tabPanes.forEach((p) => p.classList.remove("active"));
+          btn.classList.add("active");
+          const pane = document.getElementById(targetId);
+          if (pane) pane.classList.add("active");
+        });
+      });
+
+      function adjustInvoiceViewportScale() {
+        const viewportWidth = el.invoiceViewport.clientWidth - 20;
+        const sheetWidth = 794;
+        if (viewportWidth > 0 && viewportWidth < sheetWidth) {
+          const scale = viewportWidth / sheetWidth;
+          el.invoiceScaleWrapper.style.transform = `scale(${scale})`;
+          const scaledHeight = el.invoiceSheet.offsetHeight * scale;
+          const heightDiff = el.invoiceSheet.offsetHeight - scaledHeight;
+          el.invoiceScaleWrapper.style.marginBottom = `-${Math.max(0, heightDiff)}px`;
+        } else {
+          el.invoiceScaleWrapper.style.transform = "none";
+          el.invoiceScaleWrapper.style.marginBottom = "0px";
+        }
+      }
+
+      window.addEventListener("resize", adjustInvoiceViewportScale);
+
+      // Aviso al intentar cerrar pestaña con cambios sin guardar
+      window.addEventListener("beforeunload", function (e) {
+        if (hasUnsavedChanges) {
+          e.preventDefault();
+          e.returnValue = "";
+        }
+      });
+
+      /* ------------------------------------------------------------------------
+         19. INICIALIZACIÓN Y VERIFICACIÓN DE BIBLIOTECAS CDN
+         ------------------------------------------------------------------------ */
+      async function initStudio() {
+        try {
+          await openDatabase();
+
+          // Cargar configuración guardada
+          const savedCfg = await dbGet("settings", "main_config");
+          if (savedCfg && savedCfg.data) {
+            appConfig = Object.assign({}, PROTECTED_FACTORY_CONFIG, savedCfg.data);
+          }
+
+          // Cargar facturas guardadas
+          await refreshSavedInvoicesList();
+
+          // Preparar factura inicial con número único
+          const nextObj = generateNextUniqueInvoiceNumber(getTodayISO());
+          currentInvoice = createBlankInvoiceFromTemplate(appConfig, nextObj.usedSeq);
+          currentInvoice.invoiceNumber = nextObj.number;
+
+          populateConfigForm();
+          populateFormFromCurrentInvoice();
+          markDirtyState(false);
+
+          // Verificar si hay un borrador sin guardar de una sesión previa
+          const savedDraft = await dbGet("drafts", "active_draft");
+          if (savedDraft && savedDraft.invoice) {
+            pendingRecoveredDraft = savedDraft.invoice;
+            el.draftBanner.style.display = "flex";
+          }
+        } catch (err) {
+          populateConfigForm();
+          populateFormFromCurrentInvoice();
+          showToast("⚠️ Almacenamiento local restringido: " + err.message);
+        }
+
+        adjustInvoiceViewportScale();
+
+        // Verificar disponibilidad de bibliotecas externas CDN tras la carga
+        window.addEventListener("load", function () {
+          setTimeout(() => {
+            const hasCanvas = typeof window.html2canvas === "function";
+            const hasPdf = Boolean(window.jspdf && window.jspdf.jsPDF);
+            if (!hasCanvas || !hasPdf) {
+              el.cdnWarning.style.display = "block";
+            }
+            adjustInvoiceViewportScale();
+          }, 800);
+        });
+      }
+
+      el.btnRecoverDraft.addEventListener("click", function () {
+        if (pendingRecoveredDraft) {
+          currentInvoice = pendingRecoveredDraft;
+          pendingRecoveredDraft = null;
+          el.draftBanner.style.display = "none";
+          populateFormFromCurrentInvoice();
+          markDirtyState(true);
+          showToast("📝 Borrador recuperado correctamente.");
+        }
+      });
+
+      el.btnDiscardDraft.addEventListener("click", async function () {
+        pendingRecoveredDraft = null;
+        el.draftBanner.style.display = "none";
+        await clearAutoDraft();
+        showToast("Borrador descartado.");
+      });
+
+      initStudio();
+    })();
+  </script>
+</body>
+</html>
