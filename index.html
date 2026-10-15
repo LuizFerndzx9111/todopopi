@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-  <title>TodoPopi Invoice Studio — Facturador Oficial</title>
+  <title>TodoPopi Invoice Studio — Sistema con IA y Control de Usuarios</title>
 
   <!-- Bibliotecas externas vía CDN para exportación a PDF, PNG y JPG -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
@@ -15,14 +15,13 @@
       --tp-accent: #d97706;
       --tp-accent-dark: #b45309;
       --tp-border: #d1d5db;
-      --tp-border-strong: #111827;
       --tp-bg-app: #f3f4f6;
       --tp-panel-bg: #ffffff;
       --tp-success: #059669;
       --tp-danger: #dc2626;
-      --tp-warning: #d97706;
-      --tp-muted: #6b7280;
-      --sheet-width: 794px; /* Ancho estándar Carta/A4 a 96 DPI */
+      --tp-ai: #4f46e5;
+      --tp-ai-dark: #4338ca;
+      --sheet-width: 794px;
     }
 
     * {
@@ -40,6 +39,73 @@
     }
 
     /* ==========================================================================
+       PANTALLA DE LOGIN
+       ========================================================================== */
+    .login-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 5000;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #111827 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 28px 24px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+      border-top: 6px solid var(--tp-accent);
+    }
+
+    .login-brand {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .login-brand-badge {
+      display: inline-block;
+      background: #111827;
+      color: #fbbf24;
+      font-weight: 900;
+      font-size: 1.15rem;
+      padding: 6px 14px;
+      border-radius: 8px;
+      letter-spacing: 1px;
+      border: 2px solid var(--tp-accent);
+      margin-bottom: 8px;
+    }
+
+    .login-brand h2 {
+      font-size: 1.25rem;
+      color: #111827;
+      font-weight: 800;
+    }
+
+    .login-brand p {
+      font-size: 0.84rem;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    .login-error {
+      display: none;
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+
+    /* ==========================================================================
        BARRA SUPERIOR ADMINISTRATIVA
        ========================================================================== */
     .app-topbar {
@@ -48,19 +114,20 @@
       z-index: 100;
       background: #111827;
       color: #ffffff;
-      padding: 12px 16px;
+      padding: 10px 16px;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
     }
 
     .brand-bar {
       display: flex;
       align-items: center;
       gap: 10px;
+      flex-wrap: wrap;
     }
 
     .brand-badge {
@@ -70,12 +137,22 @@
       padding: 4px 10px;
       border-radius: 6px;
       letter-spacing: 0.5px;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
     }
 
     .brand-title {
-      font-size: 1.05rem;
+      font-size: 1rem;
       font-weight: 700;
+    }
+
+    .user-session-pill {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fbbf24;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      border: 1px solid rgba(251, 191, 36, 0.35);
     }
 
     .status-indicators {
@@ -86,7 +163,7 @@
     }
 
     .status-pill {
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       padding: 4px 10px;
       border-radius: 999px;
       font-weight: 600;
@@ -113,7 +190,7 @@
       color: #92400e;
       border-bottom: 2px solid #f59e0b;
       padding: 10px 16px;
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       font-weight: 600;
       text-align: center;
     }
@@ -124,7 +201,7 @@
       color: #1e40af;
       border-bottom: 2px solid #3b82f6;
       padding: 10px 16px;
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       align-items: center;
       justify-content: center;
       gap: 12px;
@@ -135,11 +212,11 @@
        CONTENEDOR PRINCIPAL (GRID RESPONSIVE)
        ========================================================================== */
     .studio-layout {
-      max-width: 1600px;
+      max-width: 1620px;
       margin: 16px auto;
       padding: 0 12px;
       display: grid;
-      grid-template-columns: 500px 1fr;
+      grid-template-columns: 520px 1fr;
       gap: 20px;
       align-items: start;
     }
@@ -166,7 +243,7 @@
       background: #f9fafb;
       border-bottom: 1px solid #e5e7eb;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
       gap: 8px;
     }
 
@@ -181,13 +258,13 @@
     .nav-tab {
       flex: 1;
       min-width: max-content;
-      padding: 12px 14px;
+      padding: 11px 12px;
       background: transparent;
       color: #d1d5db;
       border: none;
       border-bottom: 3px solid transparent;
-      font-size: 0.86rem;
-      font-weight: 600;
+      font-size: 0.82rem;
+      font-weight: 700;
       cursor: pointer;
       transition: all 0.15s ease;
     }
@@ -200,7 +277,20 @@
     .nav-tab.active {
       color: #fbbf24;
       border-bottom-color: #fbbf24;
-      background: rgba(251, 191, 36, 0.08);
+      background: rgba(251, 191, 36, 0.1);
+    }
+
+    .nav-tab.ai-tab {
+      color: #c7d2fe;
+    }
+    .nav-tab.ai-tab.active {
+      color: #818cf8;
+      border-bottom-color: #818cf8;
+      background: rgba(99, 102, 241, 0.15);
+    }
+
+    .nav-tab.admin-master-tab {
+      color: #fde68a;
     }
 
     .tab-pane {
@@ -213,8 +303,8 @@
     }
 
     .section-heading {
-      font-size: 0.95rem;
-      font-weight: 700;
+      font-size: 0.92rem;
+      font-weight: 800;
       color: #111827;
       margin-bottom: 12px;
       padding-bottom: 6px;
@@ -222,6 +312,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
     .form-grid {
@@ -249,12 +341,13 @@
     }
 
     label {
-      font-size: 0.8rem;
+      font-size: 0.79rem;
       font-weight: 700;
       color: #374151;
     }
 
     input[type="text"],
+    input[type="password"],
     input[type="number"],
     input[type="date"],
     select,
@@ -263,11 +356,19 @@
       padding: 10px 12px;
       border: 1px solid #d1d5db;
       border-radius: 6px;
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       font-family: inherit;
       color: #111827;
       background: #fff;
       transition: border-color 0.15s;
+    }
+
+    input:disabled,
+    select:disabled,
+    textarea:disabled {
+      background: #f3f4f6;
+      color: #6b7280;
+      cursor: not-allowed;
     }
 
     input:focus,
@@ -280,10 +381,10 @@
 
     textarea {
       resize: vertical;
-      min-height: 64px;
+      min-height: 62px;
     }
 
-    /* Botones grandes y accesibles para Android/iPhone */
+    /* Botones */
     .btn {
       display: inline-flex;
       align-items: center;
@@ -291,84 +392,195 @@
       gap: 6px;
       padding: 10px 14px;
       border-radius: 6px;
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       font-weight: 700;
       cursor: pointer;
       border: 1px solid transparent;
       transition: all 0.15s ease;
       text-align: center;
-      min-height: 42px;
+      min-height: 40px;
       user-select: none;
     }
 
-    .btn:active {
-      transform: translateY(1px);
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
-    .btn-primary {
-      background: #111827;
-      color: #ffffff;
-    }
-    .btn-primary:hover {
-      background: #1f2937;
-    }
+    .btn-primary { background: #111827; color: #ffffff; }
+    .btn-primary:hover:not(:disabled) { background: #1f2937; }
 
-    .btn-accent {
-      background: var(--tp-accent);
-      color: #ffffff;
-    }
-    .btn-accent:hover {
-      background: var(--tp-accent-dark);
-    }
+    .btn-accent { background: var(--tp-accent); color: #ffffff; }
+    .btn-accent:hover:not(:disabled) { background: var(--tp-accent-dark); }
 
-    .btn-success {
-      background: var(--tp-success);
-      color: #ffffff;
-    }
-    .btn-success:hover {
-      background: #047857;
-    }
+    .btn-ai { background: var(--tp-ai); color: #ffffff; }
+    .btn-ai:hover:not(:disabled) { background: var(--tp-ai-dark); }
 
-    .btn-danger {
-      background: #fee2e2;
-      color: #b91c1c;
-      border-color: #fecaca;
-    }
-    .btn-danger:hover {
-      background: #fecaca;
-    }
+    .btn-success { background: var(--tp-success); color: #ffffff; }
+    .btn-success:hover:not(:disabled) { background: #047857; }
 
-    .btn-outline {
-      background: #ffffff;
-      color: #1f2937;
-      border-color: #d1d5db;
-    }
-    .btn-outline:hover {
-      background: #f3f4f6;
-    }
+    .btn-danger { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+    .btn-danger:hover:not(:disabled) { background: #fecaca; }
+
+    .btn-outline { background: #ffffff; color: #1f2937; border-color: #d1d5db; }
+    .btn-outline:hover:not(:disabled) { background: #f3f4f6; }
 
     .btn-sm {
       padding: 6px 10px;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       min-height: 32px;
     }
 
-    /* Tarjetas de edición de productos en el panel */
-    .product-editor-list {
+    /* ==========================================================================
+       ASISTENTE DE INTELIGENCIA ARTIFICIAL (CHATBOT DE FACTURACIÓN)
+       ========================================================================== */
+    .ai-box-container {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
+      background: #f8fafc;
+      border: 1px solid #e0e7ff;
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    .ai-header-banner {
+      background: linear-gradient(135deg, #312e81 0%, #4f46e5 100%);
+      color: #ffffff;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      line-height: 1.4;
+    }
+
+    .ai-header-banner strong {
+      display: block;
+      font-size: 0.95rem;
+      margin-bottom: 4px;
+      color: #e0e7ff;
+    }
+
+    .ai-quick-chips {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .ai-chip {
+      background: #eef2ff;
+      color: #3730a3;
+      border: 1px solid #c7d2fe;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .ai-chip:hover {
+      background: #e0e7ff;
+    }
+
+    .ai-chat-messages {
+      height: 300px;
+      overflow-y: auto;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .ai-msg {
+      max-width: 90%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      line-height: 1.45;
+      word-break: break-word;
+      white-space: pre-line;
+    }
+
+    .ai-msg.assistant {
+      align-self: flex-start;
+      background: #f3f4f6;
+      color: #111827;
+      border-bottom-left-radius: 2px;
+    }
+
+    .ai-msg.user {
+      align-self: flex-end;
+      background: var(--tp-ai);
+      color: #ffffff;
+      border-bottom-right-radius: 2px;
+    }
+
+    .ai-msg.system-error {
+      align-self: center;
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+      width: 100%;
+    }
+
+    .ai-input-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    .ai-input-row textarea {
+      flex: 1;
+      min-height: 54px;
+      max-height: 120px;
+      font-size: 0.88rem;
+    }
+
+    .btn-mic.recording {
+      background: #dc2626 !important;
+      color: #fff !important;
+      animation: pulseMic 1.2s infinite;
+    }
+
+    @keyframes pulseMic {
+      0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.6); }
+      70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+    }
+
+    /* ==========================================================================
+       TARJETAS DE PRODUCTOS, HISTORIAL Y GESTIÓN DE USUARIOS
+       ========================================================================== */
+    .product-editor-list,
+    .saved-invoice-list,
+    .users-admin-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
       margin-bottom: 14px;
     }
 
-    .product-card {
+    .saved-invoice-list {
+      max-height: 430px;
+      overflow-y: auto;
+    }
+
+    .product-card,
+    .saved-invoice-item,
+    .user-admin-card {
       background: #f9fafb;
       border: 1px solid #d1d5db;
       border-radius: 8px;
       padding: 12px;
     }
 
-    .product-card-header {
+    .product-card-header,
+    .saved-invoice-top,
+    .user-card-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -378,18 +590,12 @@
     }
 
     .product-index-badge {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 800;
       color: #111827;
       background: #e5e7eb;
       padding: 3px 8px;
       border-radius: 4px;
-    }
-
-    .product-card-actions {
-      display: flex;
-      gap: 4px;
-      flex-wrap: wrap;
     }
 
     .product-card-grid {
@@ -408,64 +614,58 @@
     .product-subtotal-preview {
       margin-top: 8px;
       text-align: right;
-      font-size: 0.86rem;
+      font-size: 0.84rem;
       font-weight: 700;
       color: #111827;
     }
 
-    /* Lista de facturas guardadas */
-    .saved-invoice-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      max-height: 460px;
-      overflow-y: auto;
-      padding-right: 4px;
-    }
-
-    .saved-invoice-item {
+    .perm-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: #f9fafb;
+      padding: 10px;
       border: 1px solid #e5e7eb;
       border-radius: 8px;
-      padding: 12px;
-      background: #f9fafb;
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 520px) {
+      .perm-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .perm-check {
       display: flex;
-      flex-direction: column;
+      align-items: center;
       gap: 8px;
-    }
-
-    .saved-invoice-item.active-invoice {
-      border-color: var(--tp-accent);
-      background: #fffbeb;
-    }
-
-    .saved-invoice-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 8px;
-    }
-
-    .saved-invoice-num {
-      font-weight: 800;
-      color: #111827;
-      font-size: 0.95rem;
-    }
-
-    .saved-invoice-total {
-      font-weight: 800;
-      color: var(--tp-success);
-      font-size: 0.95rem;
-    }
-
-    .saved-invoice-meta {
       font-size: 0.82rem;
-      color: #4b5563;
+      font-weight: 600;
+      color: #1f2937;
+      cursor: pointer;
     }
 
-    .saved-invoice-actions {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
+    .perm-check input {
+      width: 17px;
+      height: 17px;
+      accent-color: var(--tp-accent);
+    }
+
+    .perm-tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: #e5e7eb;
+      color: #111827;
+      font-weight: 700;
+      margin: 2px;
+    }
+
+    .perm-tag.ai-on {
+      background: #e0e7ff;
+      color: #3730a3;
     }
 
     /* ==========================================================================
@@ -491,31 +691,20 @@
       gap: 12px;
     }
 
-    .export-options-group {
+    .export-options-group,
+    .export-buttons-group {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 10px;
-    }
-
-    .export-options-group label {
-      font-size: 0.78rem;
-      margin-bottom: 2px;
+      gap: 8px;
     }
 
     .export-options-group select {
       padding: 6px 10px;
-      font-size: 0.84rem;
+      font-size: 0.82rem;
       width: auto;
     }
 
-    .export-buttons-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    /* Contenedor que mantiene proporciones exactas de la factura sin deformar en móvil */
     .invoice-viewport {
       width: 100%;
       overflow-x: auto;
@@ -537,7 +726,7 @@
 
     /* ==========================================================================
        DISEÑO ORIGINAL DE LA FACTURA TODOPOPI (#invoice-sheet)
-       Fidelidad estricta: tipografía, bordes, márgenes, tabla, condiciones y pie
+       Intacto y protegido para impresión y exportación fiel
        ========================================================================== */
     #invoice-sheet {
       width: 794px;
@@ -558,7 +747,6 @@
       flex: 1;
     }
 
-    /* Encabezado original */
     .tp-header {
       display: flex;
       justify-content: space-between;
@@ -633,7 +821,6 @@
       text-align: center;
     }
 
-    /* Bloque de datos del cliente */
     .tp-client-box {
       border: 1.5px solid #000000;
       padding: 12px 16px;
@@ -668,7 +855,6 @@
       word-break: break-word;
     }
 
-    /* Texto introductorio */
     .tp-intro-text {
       font-family: Arial, Helvetica, sans-serif;
       font-size: 12.8px;
@@ -678,7 +864,6 @@
       white-space: pre-line;
     }
 
-    /* Tabla de productos */
     .tp-items-table {
       width: 100%;
       border-collapse: collapse;
@@ -710,36 +895,12 @@
       background-color: #f8f8f8;
     }
 
-    .col-cant {
-      width: 11%;
-      text-align: center;
-    }
+    .col-cant { width: 11%; text-align: center; }
+    .col-unid { width: 13%; text-align: center; }
+    .col-desc { width: 44%; text-align: left; white-space: pre-line; }
+    .col-unit { width: 16%; text-align: right; white-space: nowrap; }
+    .col-sub  { width: 16%; text-align: right; font-weight: 700; white-space: nowrap; }
 
-    .col-unid {
-      width: 13%;
-      text-align: center;
-    }
-
-    .col-desc {
-      width: 44%;
-      text-align: left;
-      white-space: pre-line;
-    }
-
-    .col-unit {
-      width: 16%;
-      text-align: right;
-      white-space: nowrap;
-    }
-
-    .col-sub {
-      width: 16%;
-      text-align: right;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    /* Sección inferior de Condiciones + Totales */
     .tp-summary-section {
       display: flex;
       justify-content: space-between;
@@ -812,7 +973,6 @@
       border-color: #000000;
     }
 
-    /* Mensaje corporativo y firmas */
     .tp-corporate-message {
       font-family: Georgia, "Times New Roman", serif;
       font-style: italic;
@@ -827,7 +987,6 @@
       page-break-inside: avoid;
     }
 
-    /* Pie de página con datos de TodoPopi */
     .tp-footer {
       border-top: 2px solid #000000;
       padding-top: 10px;
@@ -841,7 +1000,6 @@
       page-break-inside: avoid;
     }
 
-    /* Notificación flotante (Toast) */
     #toast-notification {
       position: fixed;
       bottom: 20px;
@@ -851,22 +1009,19 @@
       color: #ffffff;
       padding: 12px 18px;
       border-radius: 8px;
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       font-weight: 600;
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
       display: none;
-      max-width: 340px;
+      max-width: 350px;
       border-left: 4px solid var(--tp-accent);
     }
 
     /* ==========================================================================
        CONFIGURACIÓN DE IMPRESIÓN (@media print)
-       Muestra exclusivamente la factura respetando márgenes y proporciones
        ========================================================================== */
     @media print {
-      @page {
-        margin: 10mm;
-      }
+      @page { margin: 10mm; }
 
       html, body {
         background: #ffffff !important;
@@ -876,6 +1031,7 @@
         print-color-adjust: exact !important;
       }
 
+      .login-overlay,
       .app-topbar,
       .cdn-warning-banner,
       .draft-recovery-banner,
@@ -918,40 +1074,74 @@
 </head>
 <body>
 
-  <!-- BARRA SUPERIOR -->
+  <!-- ==========================================================================
+       PANTALLA DE ACCESO (LOGIN)
+       ========================================================================== -->
+  <div id="login-overlay" class="login-overlay">
+    <form id="login-form" class="login-card" autocomplete="off">
+      <div class="login-brand">
+        <span class="login-brand-badge">TODOPOPI</span>
+        <h2>Invoice Studio + IA</h2>
+        <p>Inicia sesión con tu cuenta autorizada</p>
+      </div>
+
+      <div id="login-error-box" class="login-error">Usuario o contraseña incorrectos.</div>
+
+      <div class="form-group">
+        <label for="login-username">Usuario</label>
+        <input type="text" id="login-username" placeholder="Ingresa tu usuario" required />
+      </div>
+
+      <div class="form-group" style="margin-bottom: 18px;">
+        <label for="login-password">Contraseña</label>
+        <input type="password" id="login-password" placeholder="Ingresa tu contraseña" required />
+      </div>
+
+      <button type="submit" class="btn btn-accent" style="width: 100%; font-size: 0.95rem;">
+        🔐 Entrar al Facturador
+      </button>
+    </form>
+  </div>
+
+  <!-- ==========================================================================
+       BARRA SUPERIOR
+       ========================================================================== -->
   <header class="app-topbar">
     <div class="brand-bar">
       <span class="brand-badge">TODOPOPI</span>
       <span class="brand-title">Invoice Studio</span>
+      <span id="active-user-pill" class="user-session-pill">👤 Sesión</span>
     </div>
     <div class="status-indicators">
       <span id="save-status-pill" class="status-pill status-saved">✓ Guardado al día</span>
-      <button type="button" class="btn btn-accent btn-sm" id="btn-top-save">💾 Guardar Factura</button>
+      <button type="button" class="btn btn-ai btn-sm" id="btn-top-ai">🤖 Pedir a la IA</button>
+      <button type="button" class="btn btn-accent btn-sm" id="btn-top-save">💾 Guardar</button>
       <button type="button" class="btn btn-outline btn-sm" id="btn-top-new">＋ Nueva</button>
+      <button type="button" class="btn btn-danger btn-sm" id="btn-logout">Salir</button>
     </div>
   </header>
 
   <!-- AVISO SI LAS BIBLIOTECAS CDN NO ESTÁN DISPONIBLES -->
   <div id="cdn-warning" class="cdn-warning-banner">
-    ⚠️ Aviso: No se pudieron cargar las bibliotecas externas (html2canvas / jsPDF) por falta de conexión a Internet. La edición, el guardado en base de datos local, las copias JSON y el botón "Imprimir / Guardar PDF nativo" siguen funcionando al 100%.
+    ⚠️ Aviso: No se pudieron cargar las bibliotecas externas (html2canvas / jsPDF). Verifica tu conexión a Internet para exportar a PNG/JPG/PDF directo, o utiliza el botón "Imprimir Factura".
   </div>
 
   <!-- BANNER DE RECUPERACIÓN DE BORRADOR -->
   <div id="draft-banner" class="draft-recovery-banner">
-    <span>📝 Se encontró un borrador automático sin guardar de tu última sesión.</span>
+    <span>📝 Se encontró un borrador sin guardar de tu sesión anterior.</span>
     <button type="button" class="btn btn-primary btn-sm" id="btn-recover-draft">Recuperar Borrador</button>
     <button type="button" class="btn btn-outline btn-sm" id="btn-discard-draft">Descartar</button>
   </div>
 
-  <!-- LAYOUT PRINCIPAL -->
+  <!-- ==========================================================================
+       LAYOUT PRINCIPAL
+       ========================================================================== -->
   <main class="studio-layout">
 
-    <!-- ========================================================================
-         COLUMNA IZQUIERDA: PANEL ADMINISTRATIVO DE EDICIÓN
-         ======================================================================== -->
+    <!-- COLUMNA IZQUIERDA: PANEL DE CONTROL, EDICIÓN, IA Y ADMIN -->
     <section class="admin-panel" aria-label="Panel Administrativo">
 
-      <!-- Acciones Rápidas de Factura -->
+      <!-- Acciones Rápidas -->
       <div class="quick-actions-bar">
         <button type="button" class="btn btn-success" id="btn-save-invoice">💾 Guardar / Actualizar</button>
         <button type="button" class="btn btn-outline" id="btn-save-as-new">📑 Guardar como otra</button>
@@ -961,32 +1151,65 @@
 
       <!-- Pestañas de Navegación -->
       <nav class="nav-tabs" role="tablist">
-        <button type="button" class="nav-tab active" data-tab="tab-datos">1. Cliente y Fecha</button>
-        <button type="button" class="nav-tab" data-tab="tab-productos">2. Productos</button>
-        <button type="button" class="nav-tab" data-tab="tab-totales">3. Cargos y Condiciones</button>
-        <button type="button" class="nav-tab" data-tab="tab-historial">4. Historial (<span id="count-invoices">0</span>)</button>
-        <button type="button" class="nav-tab" data-tab="tab-config">5. Logo y Negocio</button>
+        <button type="button" class="nav-tab ai-tab active" data-tab="tab-ia" id="tab-btn-ia">🤖 Asistente IA</button>
+        <button type="button" class="nav-tab" data-tab="tab-datos" id="tab-btn-datos">1. Cliente</button>
+        <button type="button" class="nav-tab" data-tab="tab-productos" id="tab-btn-productos">2. Productos</button>
+        <button type="button" class="nav-tab" data-tab="tab-totales" id="tab-btn-totales">3. Cargos</button>
+        <button type="button" class="nav-tab" data-tab="tab-historial" id="tab-btn-historial">4. Historial (<span id="count-invoices">0</span>)</button>
+        <button type="button" class="nav-tab" data-tab="tab-config" id="tab-btn-config">5. Logo/Negocio</button>
+        <button type="button" class="nav-tab admin-master-tab" data-tab="tab-admin" id="tab-btn-admin" style="display:none;">👑 Admin JeanZ</button>
       </nav>
 
-      <!-- PESTAÑA 1: CLIENTE, FECHA Y NUMERACIÓN -->
-      <div class="tab-pane active" id="tab-datos">
+      <!-- ======================================================================
+           PESTAÑA IA: CHATBOT INTELIGENTE PARA HACER FACTURAS CON MANDATOS
+           ====================================================================== -->
+      <div class="tab-pane active" id="tab-ia">
+        <div class="ai-box-container">
+          <div class="ai-header-banner">
+            <strong>🤖 Asistente Inteligente TodoPopi</strong>
+            Dile con tus propias palabras o por voz qué factura quieres hacer o qué deseas cambiar. La IA coloca cada dato, producto, cantidad, precio, descuento o condición exactamente donde va.
+          </div>
+
+          <div class="ai-quick-chips">
+            <button type="button" class="ai-chip" data-prompt="Haz una factura para Juan Pérez en San Cristóbal, teléfono 809-555-1234. Ponle 3 gorras originales a 650 pesos y 2 T-shirts negros a 950 pesos.">⚡ Ejemplo: Cliente + Productos</button>
+            <button type="button" class="ai-chip" data-prompt="Agrégale un descuento de 200 pesos y pon 150 pesos de envío a domicilio.">⚡ Agregar descuento y envío</button>
+            <button type="button" class="ai-chip" data-prompt="En las condiciones pon que pagó el 50% por transferencia y el resto contra entrega.">⚡ Cambiar condiciones</button>
+            <button type="button" class="ai-chip" data-prompt="Limpia todos los productos y deja solo 1 servicio de asesoría comercial por RD$3,500.">⚡ Reiniciar productos</button>
+          </div>
+
+          <div id="ai-chat-messages" class="ai-chat-messages">
+            <div class="ai-msg assistant">¡Hola! Soy el asistente de facturación de TodoPopi. Escríbeme o dicta por micrófono los datos del cliente, productos, precios o condiciones y yo lleno toda la factura por ti al instante.</div>
+          </div>
+
+          <div class="ai-input-row">
+            <textarea id="ai-user-input" placeholder="Ej: Factura a nombre de María Santos en Hatillo, ponle 4 perfumes a 1200 pesos cada uno y envío de 150..."></textarea>
+            <button type="button" class="btn btn-outline btn-mic" id="btn-ai-mic" title="Hablar por micrófono">🎤</button>
+            <button type="button" class="btn btn-ai" id="btn-ai-send">Enviar 🚀</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================================
+           PESTAÑA 1: CLIENTE, FECHA Y NUMERACIÓN MANUAL
+           ====================================================================== -->
+      <div class="tab-pane" id="tab-datos">
         <div class="section-heading">
           <span>Numeración y Fecha</span>
-          <button type="button" class="btn btn-outline btn-sm" id="btn-gen-number">🔄 Generar # Secuencial</button>
+          <button type="button" class="btn btn-outline btn-sm manual-control" id="btn-gen-number">🔄 Generar # Secuencial</button>
         </div>
 
         <div class="form-grid">
           <div class="form-group">
             <label for="inp-number">Número de Factura</label>
-            <input type="text" id="inp-number" placeholder="TP-2026-1014-001" />
+            <input type="text" class="manual-control" id="inp-number" placeholder="TP-2026-1015-001" />
           </div>
           <div class="form-group">
             <label for="inp-date">Fecha de Emisión</label>
-            <input type="date" id="inp-date" />
+            <input type="date" class="manual-control" id="inp-date" />
           </div>
           <div class="form-group">
             <label for="inp-currency">Moneda</label>
-            <select id="inp-currency">
+            <select class="manual-control" id="inp-currency">
               <option value="RD$">RD$ (Peso Dominicano)</option>
               <option value="US$">US$ (Dólar Estadounidense)</option>
               <option value="€">€ (Euro)</option>
@@ -995,7 +1218,7 @@
           </div>
           <div class="form-group">
             <label for="inp-client-phone">Teléfono / RNC Cliente (Opcional)</label>
-            <input type="text" id="inp-client-phone" placeholder="Ej: 809-555-0000" />
+            <input type="text" class="manual-control" id="inp-client-phone" placeholder="Ej: 809-555-0000" />
           </div>
         </div>
 
@@ -1005,35 +1228,39 @@
 
         <div class="form-group">
           <label for="inp-client-name">Nombre del Cliente / Empresa</label>
-          <input type="text" id="inp-client-name" placeholder="Nombre completo o razón social" />
+          <input type="text" class="manual-control" id="inp-client-name" placeholder="Nombre completo o razón social" />
         </div>
 
         <div class="form-group">
           <label for="inp-client-address">Dirección / Ciudad / Referencia</label>
-          <input type="text" id="inp-client-address" placeholder="Dirección de entrega o domicilio" />
+          <input type="text" class="manual-control" id="inp-client-address" placeholder="Dirección de entrega o domicilio" />
         </div>
 
         <div class="form-group">
           <label for="inp-intro-text">Texto Introductorio de la Factura</label>
-          <textarea id="inp-intro-text" rows="2"></textarea>
+          <textarea class="manual-control" id="inp-intro-text" rows="2"></textarea>
         </div>
       </div>
 
-      <!-- PESTAÑA 2: PRODUCTOS Y SERVICIOS -->
+      <!-- ======================================================================
+           PESTAÑA 2: PRODUCTOS Y SERVICIOS MANUAL
+           ====================================================================== -->
       <div class="tab-pane" id="tab-productos">
         <div class="section-heading">
           <span>Detalle de Productos y Servicios</span>
-          <button type="button" class="btn btn-accent btn-sm" id="btn-add-item">＋ Agregar Producto</button>
+          <button type="button" class="btn btn-accent btn-sm manual-control" id="btn-add-item">＋ Agregar Producto</button>
         </div>
 
         <div id="product-editor-container" class="product-editor-list"></div>
 
-        <button type="button" class="btn btn-primary" style="width:100%;" id="btn-add-item-bottom">
+        <button type="button" class="btn btn-primary manual-control" style="width:100%;" id="btn-add-item-bottom">
           ＋ Añadir otra fila de producto o servicio
         </button>
       </div>
 
-      <!-- PESTAÑA 3: CARGOS, DESCUENTOS Y CONDICIONES -->
+      <!-- ======================================================================
+           PESTAÑA 3: CARGOS, DESCUENTOS Y CONDICIONES MANUAL
+           ====================================================================== -->
       <div class="tab-pane" id="tab-totales">
         <div class="section-heading">
           <span>Descuentos, Impuestos y Envío (Se ocultan si son 0)</span>
@@ -1042,31 +1269,31 @@
         <div class="form-grid">
           <div class="form-group">
             <label for="inp-discount-type">Tipo de Descuento</label>
-            <select id="inp-discount-type">
+            <select class="manual-control" id="inp-discount-type">
               <option value="fixed">Monto fijo (RD$)</option>
               <option value="percent">Porcentaje (%)</option>
             </select>
           </div>
           <div class="form-group">
             <label for="inp-discount-val">Valor del Descuento</label>
-            <input type="number" id="inp-discount-val" min="0" step="0.01" value="0" />
+            <input type="number" class="manual-control" id="inp-discount-val" min="0" step="0.01" value="0" />
           </div>
 
           <div class="form-group">
             <label for="inp-tax-type">Tipo de Impuesto (ITBIS)</label>
-            <select id="inp-tax-type">
+            <select class="manual-control" id="inp-tax-type">
               <option value="percent">Porcentaje (%)</option>
               <option value="fixed">Monto fijo (RD$)</option>
             </select>
           </div>
           <div class="form-group">
             <label for="inp-tax-val">Valor de Impuesto</label>
-            <input type="number" id="inp-tax-val" min="0" step="0.01" value="0" />
+            <input type="number" class="manual-control" id="inp-tax-val" min="0" step="0.01" value="0" />
           </div>
 
           <div class="form-group full">
             <label for="inp-shipping-val">Gastos de Envío / Cargos Adicionales</label>
-            <input type="number" id="inp-shipping-val" min="0" step="0.01" value="0" />
+            <input type="number" class="manual-control" id="inp-shipping-val" min="0" step="0.01" value="0" />
           </div>
         </div>
 
@@ -1076,16 +1303,18 @@
 
         <div class="form-group">
           <label for="inp-conditions">Condiciones Comerciales (Entrega, Forma de Pago, etc.)</label>
-          <textarea id="inp-conditions" rows="4"></textarea>
+          <textarea class="manual-control" id="inp-conditions" rows="4"></textarea>
         </div>
 
         <div class="form-group">
           <label for="inp-corporate-msg">Mensaje Corporativo / Nota de Agradecimiento</label>
-          <textarea id="inp-corporate-msg" rows="2"></textarea>
+          <textarea class="manual-control" id="inp-corporate-msg" rows="2"></textarea>
         </div>
       </div>
 
-      <!-- PESTAÑA 4: HISTORIAL Y ADMINISTRACIÓN DE FACTURAS (IndexedDB) -->
+      <!-- ======================================================================
+           PESTAÑA 4: HISTORIAL Y ADMINISTRACIÓN DE FACTURAS
+           ====================================================================== -->
       <div class="tab-pane" id="tab-historial">
         <div class="section-heading">
           <span>Buscar y Filtrar Facturas Guardadas</span>
@@ -1093,7 +1322,7 @@
 
         <div class="form-grid">
           <div class="form-group full">
-            <label for="search-query">Buscar por Cliente o Número de Factura</label>
+            <label for="search-query">Buscar por Cliente, Número o Creador</label>
             <input type="text" id="search-query" placeholder="Ej: Juan Pérez o TP-2026..." />
           </div>
           <div class="form-group">
@@ -1111,8 +1340,8 @@
 
         <div style="display:flex; justify-content:space-between; margin-bottom:10px; gap:8px; flex-wrap:wrap;">
           <button type="button" class="btn btn-outline btn-sm" id="btn-clear-filters">Limpiar Filtros</button>
-          <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            <button type="button" class="btn btn-primary btn-sm" id="btn-export-backup">⬇️ Exportar Backup JSON</button>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;" id="backup-controls-box">
+            <button type="button" class="btn btn-primary btn-sm" id="btn-export-backup">⬇️ Exportar Backup Total JSON</button>
             <label class="btn btn-outline btn-sm" style="margin:0; cursor:pointer;">
               ⬆️ Importar JSON
               <input type="file" id="inp-import-backup" accept=".json,application/json" style="display:none;" />
@@ -1123,7 +1352,9 @@
         <div id="saved-invoices-container" class="saved-invoice-list"></div>
       </div>
 
-      <!-- PESTAÑA 5: LOGOTIPO Y CONFIGURACIÓN CORPORATIVA -->
+      <!-- ======================================================================
+           PESTAÑA 5: LOGOTIPO Y CONFIGURACIÓN DEL NEGOCIO
+           ====================================================================== -->
       <div class="tab-pane" id="tab-config">
         <div class="section-heading">
           <span>Logotipo de TodoPopi</span>
@@ -1169,15 +1400,116 @@
         </div>
 
         <div class="form-group">
-          <label for="inp-cfg-footer">Pie de Página Oficial de TodoPopi (Teléfono, Dirección, Web, Redes)</label>
+          <label for="inp-cfg-footer">Pie de Página Oficial de TodoPopi</label>
           <textarea id="inp-cfg-footer" rows="3"></textarea>
         </div>
 
         <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;">
           <button type="button" class="btn btn-success" id="btn-save-config">💾 Guardar Configuración</button>
-          <button type="button" class="btn btn-outline" id="btn-export-config-json">⬇️ Backup Configuración</button>
           <button type="button" class="btn btn-danger" id="btn-reset-factory">⚠️ Restaurar Valores Originales</button>
         </div>
+      </div>
+
+      <!-- ======================================================================
+           PESTAÑA 6 (EXCLUSIVA ADMIN JEANZ): API KEY DE IA Y CREACIÓN DE USUARIOS
+           ====================================================================== -->
+      <div class="tab-pane" id="tab-admin">
+        <div class="section-heading">
+          <span>🤖 Configuración Central de API de Inteligencia Artificial</span>
+        </div>
+        <p style="font-size:0.8rem; color:#4b5563; margin-bottom:10px;">
+          La API Key que pongas aquí quedará disponible automáticamente para todos los usuarios a los que les des permiso de usar la IA.
+        </p>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="inp-ai-provider">Proveedor de IA</label>
+            <select id="inp-ai-provider">
+              <option value="gemini">Google Gemini API (Recomendado)</option>
+              <option value="openai">OpenAI API (ChatGPT / Compatible)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="inp-ai-model">Modelo IA</label>
+            <input type="text" id="inp-ai-model" value="gemini-2.5-flash" placeholder="gemini-2.5-flash o gpt-4o-mini" />
+          </div>
+          <div class="form-group full">
+            <label for="inp-ai-apikey">API Key Maestra (Oculta para los demás usuarios)</label>
+            <div style="display:flex; gap:6px;">
+              <input type="password" id="inp-ai-apikey" placeholder="Pega aquí tu API Key (AIzaSy... o sk-...)" />
+              <button type="button" class="btn btn-outline btn-sm" id="btn-toggle-apikey">👁️</button>
+            </div>
+          </div>
+          <div class="form-group full">
+            <label for="inp-ai-custom-rules">Reglas adicionales para la IA de tu negocio (Opcional)</label>
+            <textarea id="inp-ai-custom-rules" rows="2" placeholder="Ej: Si el usuario no menciona la unidad, pon 'Und'. Si menciona precios sin moneda, usa RD$."></textarea>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px;">
+          <button type="button" class="btn btn-ai btn-sm" id="btn-save-ai-settings">💾 Guardar API de IA</button>
+          <button type="button" class="btn btn-outline btn-sm" id="btn-test-ai-api">⚡ Probar Conexión con la IA</button>
+        </div>
+
+        <!-- GESTIÓN DE USUARIOS Y PERMISOS -->
+        <div class="section-heading">
+          <span>👥 Crear / Editar Usuario y sus Permisos</span>
+          <button type="button" class="btn btn-outline btn-sm" id="btn-clear-user-form">Limpiar Formulario</button>
+        </div>
+
+        <input type="hidden" id="edit-user-id" value="" />
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="inp-u-username">Usuario de Acceso</label>
+            <input type="text" id="inp-u-username" placeholder="Ej: vendedor1" />
+          </div>
+          <div class="form-group">
+            <label for="inp-u-password">Contraseña</label>
+            <input type="text" id="inp-u-password" placeholder="Contraseña del usuario" />
+          </div>
+          <div class="form-group full">
+            <label for="inp-u-display">Nombre Completo / Cargo</label>
+            <input type="text" id="inp-u-display" placeholder="Ej: Carlos (Ventas San Cristóbal)" />
+          </div>
+        </div>
+
+        <label style="margin-bottom:6px; display:block;">¿Qué tiene permitido hacer este usuario?</label>
+        <div class="perm-grid">
+          <label class="perm-check">
+            <input type="checkbox" id="perm-use-ai" checked />
+            <span>🤖 Usar Chatbot IA (Con tu API Key)</span>
+          </label>
+          <label class="perm-check">
+            <input type="checkbox" id="perm-edit-manual" checked />
+            <span>✍️ Crear/Editar Factura Manual</span>
+          </label>
+          <label class="perm-check">
+            <input type="checkbox" id="perm-export-print" checked />
+            <span>🖨️ Exportar PDF/PNG/JPG e Imprimir</span>
+          </label>
+          <label class="perm-check">
+            <input type="checkbox" id="perm-view-all" />
+            <span>📂 Ver Facturas de Todos los Usuarios</span>
+          </label>
+          <label class="perm-check">
+            <input type="checkbox" id="perm-delete-inv" />
+            <span>🗑️ Eliminar Facturas Guardadas</span>
+          </label>
+          <label class="perm-check">
+            <input type="checkbox" id="perm-edit-config" />
+            <span>⚙️ Cambiar Logo y Datos del Negocio</span>
+          </label>
+        </div>
+
+        <button type="button" class="btn btn-success" style="width:100%; margin-bottom:18px;" id="btn-save-user">
+          ➕ Guardar Usuario y Permisos
+        </button>
+
+        <div class="section-heading">
+          <span>Lista de Usuarios Registrados</span>
+        </div>
+        <div id="users-admin-list" class="users-admin-list"></div>
       </div>
 
     </section>
@@ -1188,7 +1520,7 @@
     <section class="preview-column" aria-label="Vista previa y exportación de factura">
 
       <!-- Barra de Exportación e Impresión -->
-      <div class="export-toolbar">
+      <div class="export-toolbar" id="export-toolbar">
         <div class="export-options-group">
           <div>
             <label for="sel-paper-size">Tamaño Papel PDF</label>
@@ -1217,10 +1549,10 @@
         </div>
 
         <div class="export-buttons-group">
-          <button type="button" class="btn btn-primary" id="btn-export-pdf">📄 EXPORTAR PDF</button>
-          <button type="button" class="btn btn-accent" id="btn-export-png">🖼️ EXPORTAR PNG</button>
-          <button type="button" class="btn btn-outline" id="btn-export-jpg">📷 EXPORTAR JPG</button>
-          <button type="button" class="btn btn-success" id="btn-print-invoice">🖨️ IMPRIMIR FACTURA</button>
+          <button type="button" class="btn btn-primary export-control" id="btn-export-pdf">📄 EXPORTAR PDF</button>
+          <button type="button" class="btn btn-accent export-control" id="btn-export-png">🖼️ EXPORTAR PNG</button>
+          <button type="button" class="btn btn-outline export-control" id="btn-export-jpg">📷 EXPORTAR JPG</button>
+          <button type="button" class="btn btn-success export-control" id="btn-print-invoice">🖨️ IMPRIMIR FACTURA</button>
         </div>
       </div>
 
@@ -1247,11 +1579,11 @@
                     <tbody>
                       <tr>
                         <td class="tp-meta-label">FACTURA Nº:</td>
-                        <td class="tp-meta-val" id="doc-number">TP-2026-1014-001</td>
+                        <td class="tp-meta-val" id="doc-number">TP-2026-1015-001</td>
                       </tr>
                       <tr>
                         <td class="tp-meta-label">FECHA:</td>
-                        <td class="tp-meta-val" id="doc-date">14/10/2026</td>
+                        <td class="tp-meta-val" id="doc-date">15/10/2026</td>
                       </tr>
                     </tbody>
                   </table>
@@ -1345,14 +1677,33 @@
   <div id="toast-notification" role="status" aria-live="polite"></div>
 
   <!-- ==========================================================================
-       LÓGICA JAVASCRIPT INTEGRADA (PLANTILLA, CÁLCULOS, INDEXEDDB Y EXPORTACIÓN)
+       LÓGICA JAVASCRIPT INTEGRADA
        ========================================================================== -->
   <script>
     (function () {
       "use strict";
 
       /* ------------------------------------------------------------------------
-         1. GENERADOR DEL LOGOTIPO ORIGINAL DE TODOPOPI EN BASE64 (SIN CORS)
+         1. CREDENCIALES DEL ADMINISTRADOR MAESTRO ABSOLUTO
+         ------------------------------------------------------------------------ */
+      const MASTER_ADMIN = Object.freeze({
+        id: "master_jeanz",
+        username: "JeanZ",
+        password: "Mech01126",
+        displayName: "JeanZ (Administrador General)",
+        role: "admin",
+        permissions: {
+          useAI: true,
+          editManual: true,
+          exportPrint: true,
+          viewAllInvoices: true,
+          deleteInvoices: true,
+          editConfig: true
+        }
+      });
+
+      /* ------------------------------------------------------------------------
+         2. LOGOTIPO Y PLANTILLA ORIGINAL PROTEGIDA
          ------------------------------------------------------------------------ */
       function generateDefaultTodoPopiLogoDataURL() {
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="440" height="120" viewBox="0 0 440 120">
@@ -1365,9 +1716,6 @@
         return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
       }
 
-      /* ------------------------------------------------------------------------
-         2. PLANTILLA ORIGINAL PROTEGIDA (INMUTABLE FRENTE A EDICIONES)
-         ------------------------------------------------------------------------ */
       const PROTECTED_FACTORY_CONFIG = Object.freeze({
         logoDataUrl: generateDefaultTodoPopiLogoDataURL(),
         logoWidth: 190,
@@ -1377,10 +1725,14 @@
         defaultIntroText: "Gracias por preferir a TodoPopi. A continuación presentamos el detalle formal de los productos y servicios correspondientes a su factura:",
         defaultConditions: "• Entrega y coordinación a convenir.\n• Forma de pago: a convenir.\n• Verifique su mercancía al momento de la recepción.",
         defaultCorporateMsg: "¡Gracias por su compra! En TodoPopi trabajamos cada día para brindarle calidad, cumplimiento y atención de primera.",
-        footerText: "TodoPopi • Teléfono / WhatsApp: A convenir • Web: www.todopopi.com\nSan Cristóbal / Hatillo, República Dominicana • Redes Sociales: @TodoPopi"
+        footerText: "TodoPopi • Teléfono / WhatsApp: A convenir • Web: www.todopopi.com\nSan Cristóbal / Hatillo, República Dominicana • Redes Sociales: @TodoPopi",
+        aiProvider: "gemini",
+        aiModel: "gemini-2.5-flash",
+        aiApiKey: "",
+        aiCustomRules: "Moneda por defecto RD$. Si el usuario no indica la unidad de medida, usa 'Und'. Respeta siempre el estilo formal de la factura TodoPopi."
       });
 
-      function createBlankInvoiceFromTemplate(config, customSequence) {
+      function createBlankInvoiceFromTemplate(config, customSequence, creatorUsername) {
         const todayISO = getTodayISO();
         const seqNum = typeof customSequence === "number" ? customSequence : (config.nextSequence || 1);
         return {
@@ -1408,6 +1760,7 @@
           shippingValue: 0,
           conditions: config.defaultConditions,
           corporateMsg: config.defaultCorporateMsg,
+          createdBy: creatorUsername || "JeanZ",
           createdAt: Date.now(),
           updatedAt: Date.now()
         };
@@ -1435,12 +1788,11 @@
         const cleanPrefix = (prefix || "TP").trim().toUpperCase();
         const parts = (isoDate || getTodayISO()).split("-");
         const year = parts[0] || "2026";
-        const monthDay = (parts[1] || "10") + (parts[2] || "14");
+        const monthDay = (parts[1] || "10") + (parts[2] || "15");
         const seqStr = String(Math.max(1, parseInt(sequenceNumber, 10) || 1)).padStart(3, "0");
         return `${cleanPrefix}-${year}-${monthDay}-${seqStr}`;
       }
 
-      // Redondeo exacto a 2 decimales usando enteros en centavos para evitar errores IEEE 754
       function roundMoney(num) {
         const n = Number(num);
         if (!Number.isFinite(n)) return 0;
@@ -1453,11 +1805,19 @@
         return `${sym}${cleanAmount.toFixed(2)}`;
       }
 
+      function escapeHtml(str) {
+        return String(str || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
       /* ------------------------------------------------------------------------
-         4. BASE DE DATOS LOCAL INDEXEDDB (SIN SERVIDOR)
+         4. BASE DE DATOS LOCAL INDEXEDDB (VERSIÓN 2 CON TABLA DE USUARIOS)
          ------------------------------------------------------------------------ */
       const DB_NAME = "TodoPopiInvoiceStudioDB";
-      const DB_VERSION = 1;
+      const DB_VERSION = 2;
       let dbInstance = null;
 
       function openDatabase() {
@@ -1485,6 +1845,9 @@
             }
             if (!db.objectStoreNames.contains("drafts")) {
               db.createObjectStore("drafts", { keyPath: "key" });
+            }
+            if (!db.objectStoreNames.contains("users")) {
+              db.createObjectStore("users", { keyPath: "id" });
             }
           };
 
@@ -1544,18 +1907,29 @@
       }
 
       /* ------------------------------------------------------------------------
-         5. ESTADO DE LA APLICACIÓN
+         5. ESTADO GLOBAL DE LA APLICACIÓN
          ------------------------------------------------------------------------ */
       let appConfig = Object.assign({}, PROTECTED_FACTORY_CONFIG);
-      let currentInvoice = createBlankInvoiceFromTemplate(appConfig, 1);
+      let currentUser = null; // Usuario logueado actualmente
+      let registeredUsers = []; // Usuarios creados por JeanZ
+      let currentInvoice = createBlankInvoiceFromTemplate(appConfig, 1, "JeanZ");
       let savedInvoicesList = [];
       let hasUnsavedChanges = false;
       let pendingRecoveredDraft = null;
 
       /* ------------------------------------------------------------------------
-         6. ELEMENTOS DEL DOM
+         6. REFERENCIAS DEL DOM
          ------------------------------------------------------------------------ */
       const el = {
+        loginOverlay: document.getElementById("login-overlay"),
+        loginForm: document.getElementById("login-form"),
+        loginUsername: document.getElementById("login-username"),
+        loginPassword: document.getElementById("login-password"),
+        loginErrorBox: document.getElementById("login-error-box"),
+        activeUserPill: document.getElementById("active-user-pill"),
+        btnLogout: document.getElementById("btn-logout"),
+        btnTopAi: document.getElementById("btn-top-ai"),
+
         saveStatusPill: document.getElementById("save-status-pill"),
         cdnWarning: document.getElementById("cdn-warning"),
         draftBanner: document.getElementById("draft-banner"),
@@ -1563,7 +1937,22 @@
         btnDiscardDraft: document.getElementById("btn-discard-draft"),
         countInvoices: document.getElementById("count-invoices"),
 
-        // Campos de formulario de factura
+        // Pestañas
+        tabBtnIa: document.getElementById("tab-btn-ia"),
+        tabBtnDatos: document.getElementById("tab-btn-datos"),
+        tabBtnProductos: document.getElementById("tab-btn-productos"),
+        tabBtnTotales: document.getElementById("tab-btn-totales"),
+        tabBtnHistorial: document.getElementById("tab-btn-historial"),
+        tabBtnConfig: document.getElementById("tab-btn-config"),
+        tabBtnAdmin: document.getElementById("tab-btn-admin"),
+
+        // IA
+        aiChatMessages: document.getElementById("ai-chat-messages"),
+        aiUserInput: document.getElementById("ai-user-input"),
+        btnAiMic: document.getElementById("btn-ai-mic"),
+        btnAiSend: document.getElementById("btn-ai-send"),
+
+        // Formulario manual
         inpNumber: document.getElementById("inp-number"),
         inpDate: document.getElementById("inp-date"),
         inpCurrency: document.getElementById("inp-currency"),
@@ -1571,9 +1960,7 @@
         inpClientAddress: document.getElementById("inp-client-address"),
         inpClientPhone: document.getElementById("inp-client-phone"),
         inpIntroText: document.getElementById("inp-intro-text"),
-
         productEditorContainer: document.getElementById("product-editor-container"),
-
         inpDiscountType: document.getElementById("inp-discount-type"),
         inpDiscountVal: document.getElementById("inp-discount-val"),
         inpTaxType: document.getElementById("inp-tax-type"),
@@ -1582,11 +1969,12 @@
         inpConditions: document.getElementById("inp-conditions"),
         inpCorporateMsg: document.getElementById("inp-corporate-msg"),
 
-        // Historial y filtros
+        // Historial
         searchQuery: document.getElementById("search-query"),
         filterDate: document.getElementById("filter-date"),
         sortOrder: document.getElementById("sort-order"),
         savedInvoicesContainer: document.getElementById("saved-invoices-container"),
+        backupControlsBox: document.getElementById("backup-controls-box"),
 
         // Configuración
         inpLogoUpload: document.getElementById("inp-logo-upload"),
@@ -1597,12 +1985,27 @@
         inpCfgTagline: document.getElementById("inp-cfg-tagline"),
         inpCfgFooter: document.getElementById("inp-cfg-footer"),
 
-        // Opciones de exportación
+        // Admin (JeanZ)
+        inpAiProvider: document.getElementById("inp-ai-provider"),
+        inpAiModel: document.getElementById("inp-ai-model"),
+        inpAiApikey: document.getElementById("inp-ai-apikey"),
+        inpAiCustomRules: document.getElementById("inp-ai-custom-rules"),
+        editUserId: document.getElementById("edit-user-id"),
+        inpUUsername: document.getElementById("inp-u-username"),
+        inpUPassword: document.getElementById("inp-u-password"),
+        inpUDisplay: document.getElementById("inp-u-display"),
+        permUseAi: document.getElementById("perm-use-ai"),
+        permEditManual: document.getElementById("perm-edit-manual"),
+        permExportPrint: document.getElementById("perm-export-print"),
+        permViewAll: document.getElementById("perm-view-all"),
+        permDeleteInv: document.getElementById("perm-delete-inv"),
+        permEditConfig: document.getElementById("perm-edit-config"),
+        usersAdminList: document.getElementById("users-admin-list"),
+
+        // Exportación y vista previa
         selPaperSize: document.getElementById("sel-paper-size"),
         selImgScale: document.getElementById("sel-img-scale"),
         selJpgQuality: document.getElementById("sel-jpg-quality"),
-
-        // Documento de factura (#invoice-sheet)
         invoiceViewport: document.getElementById("invoice-viewport"),
         invoiceScaleWrapper: document.getElementById("invoice-scale-wrapper"),
         invoiceSheet: document.getElementById("invoice-sheet"),
@@ -1635,7 +2038,7 @@
       };
 
       /* ------------------------------------------------------------------------
-         7. NOTIFICACIONES Y ESTADO DE GUARDADO
+         7. NOTIFICACIONES Y BORRADORES
          ------------------------------------------------------------------------ */
       let toastTimer = null;
       function showToast(message) {
@@ -1644,7 +2047,7 @@
         if (toastTimer) clearTimeout(toastTimer);
         toastTimer = setTimeout(() => {
           el.toast.style.display = "none";
-        }, 3600);
+        }, 3800);
       }
 
       function markDirtyState(isDirty) {
@@ -1666,9 +2069,7 @@
             invoice: JSON.parse(JSON.stringify(currentInvoice)),
             timestamp: Date.now()
           });
-        } catch (e) {
-          // Silencioso si falla borrador automático
-        }
+        } catch (e) {}
       }
 
       async function clearAutoDraft() {
@@ -1678,7 +2079,535 @@
       }
 
       /* ------------------------------------------------------------------------
-         8. CÁLCULOS AUTOMÁTICOS DE LA FACTURA
+         8. AUTENTICACIÓN, SESIÓN Y CONTROL ESTRICTO DE PERMISOS
+         ------------------------------------------------------------------------ */
+      async function loadRegisteredUsers() {
+        registeredUsers = await dbGetAll("users");
+        renderUsersAdminList();
+      }
+
+      function authenticateUser(usernameInput, passwordInput) {
+        const cleanUser = (usernameInput || "").trim();
+        const cleanPass = passwordInput || "";
+
+        // Verificar primero al administrador maestro JeanZ
+        if (
+          cleanUser.toLowerCase() === MASTER_ADMIN.username.toLowerCase() &&
+          cleanPass === MASTER_ADMIN.password
+        ) {
+          return Object.assign({}, MASTER_ADMIN);
+        }
+
+        // Buscar en usuarios creados por el administrador
+        const found = registeredUsers.find(
+          (u) => u.username.toLowerCase() === cleanUser.toLowerCase() && u.password === cleanPass
+        );
+        return found ? JSON.parse(JSON.stringify(found)) : null;
+      }
+
+      function applyUserPermissionsToUI() {
+        if (!currentUser) return;
+        const isMaster = currentUser.role === "admin";
+        const perms = isMaster ? MASTER_ADMIN.permissions : (currentUser.permissions || {});
+
+        el.activeUserPill.textContent = isMaster
+          ? `👑 Admin: ${currentUser.username}`
+          : `👤 ${currentUser.displayName || currentUser.username}`;
+
+        // Mostrar u ocultar pestaña maestra JeanZ
+        el.tabBtnAdmin.style.display = isMaster ? "inline-block" : "none";
+        el.backupControlsBox.style.display = isMaster ? "flex" : "none";
+
+        // Permiso de Configuración de Logo/Negocio
+        el.tabBtnConfig.style.display = (isMaster || perms.editConfig) ? "inline-block" : "none";
+
+        // Permiso de Chatbot IA
+        el.tabBtnIa.style.display = (isMaster || perms.useAI) ? "inline-block" : "none";
+        el.btnTopAi.style.display = (isMaster || perms.useAI) ? "inline-flex" : "none";
+
+        // Permiso de Edición Manual
+        const manualControls = document.querySelectorAll(".manual-control");
+        manualControls.forEach((ctrl) => {
+          ctrl.disabled = !(isMaster || perms.editManual);
+        });
+
+        // Permiso de Exportar / Imprimir
+        const exportControls = document.querySelectorAll(".export-control");
+        exportControls.forEach((btn) => {
+          btn.disabled = !(isMaster || perms.exportPrint);
+        });
+
+        // Si el usuario no tiene permiso para IA, abrir por defecto la pestaña Cliente
+        if (!(isMaster || perms.useAI)) {
+          switchTab("tab-datos");
+        } else {
+          switchTab("tab-ia");
+        }
+
+        renderProductEditorCards();
+        renderSavedInvoicesHistory();
+      }
+
+      el.loginForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        await loadRegisteredUsers();
+        const userObj = authenticateUser(el.loginUsername.value, el.loginPassword.value);
+        if (!userObj) {
+          el.loginErrorBox.style.display = "block";
+          return;
+        }
+        el.loginErrorBox.style.display = "none";
+        currentUser = userObj;
+        sessionStorage.setItem("tp_active_user", JSON.stringify(currentUser));
+        el.loginOverlay.style.display = "none";
+        el.loginPassword.value = "";
+
+        currentInvoice.createdBy = currentUser.username;
+        applyUserPermissionsToUI();
+        adjustInvoiceViewportScale();
+        showToast(`¡Bienvenido, ${currentUser.displayName || currentUser.username}!`);
+      });
+
+      el.btnLogout.addEventListener("click", function () {
+        sessionStorage.removeItem("tp_active_user");
+        currentUser = null;
+        el.loginOverlay.style.display = "flex";
+        el.loginUsername.focus();
+      });
+
+      /* ------------------------------------------------------------------------
+         9. GESTIÓN DE USUARIOS Y API KEY EN EL PANEL DE JEANZ
+         ------------------------------------------------------------------------ */
+      function renderUsersAdminList() {
+        el.usersAdminList.innerHTML = "";
+        if (registeredUsers.length === 0) {
+          el.usersAdminList.innerHTML = `<div style="padding:12px; text-align:center; color:#6b7280; font-size:0.84rem;">Aún no has creado usuarios adicionales. Usa el formulario de arriba para crear el primero.</div>`;
+          return;
+        }
+
+        registeredUsers.forEach((u) => {
+          const p = u.permissions || {};
+          const card = document.createElement("div");
+          card.className = "user-admin-card";
+          card.innerHTML = `
+            <div class="user-card-top">
+              <div>
+                <strong style="font-size:0.95rem; color:#111827;">👤 ${escapeHtml(u.username)}</strong>
+                <span style="font-size:0.8rem; color:#4b5563;"> — ${escapeHtml(u.displayName || "")}</span>
+                <div style="font-size:0.78rem; color:#6b7280; margin-top:2px;">🔑 Clave: <code>${escapeHtml(u.password)}</code></div>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button type="button" class="btn btn-outline btn-sm" data-uaction="edit" data-uid="${u.id}">✏️ Editar</button>
+                <button type="button" class="btn btn-danger btn-sm" data-uaction="del" data-uid="${u.id}">🗑️ Eliminar</button>
+              </div>
+            </div>
+            <div>
+              <span class="perm-tag ${p.useAI ? "ai-on" : ""}">${p.useAI ? "✅ IA Activa" : "🚫 Sin IA"}</span>
+              <span class="perm-tag">${p.editManual ? "✍️ Manual: Sí" : "🔒 Manual: No"}</span>
+              <span class="perm-tag">${p.exportPrint ? "🖨️ Exportar: Sí" : "🚫 Exportar: No"}</span>
+              <span class="perm-tag">${p.viewAllInvoices ? "📂 Ve Todas" : "👤 Solo Propias"}</span>
+              <span class="perm-tag">${p.deleteInvoices ? "🗑️ Borrar: Sí" : "🔒 Borrar: No"}</span>
+              <span class="perm-tag">${p.editConfig ? "⚙️ Config: Sí" : "🔒 Config: No"}</span>
+            </div>
+          `;
+          el.usersAdminList.appendChild(card);
+        });
+      }
+
+      function clearUserForm() {
+        el.editUserId.value = "";
+        el.inpUUsername.value = "";
+        el.inpUPassword.value = "";
+        el.inpUDisplay.value = "";
+        el.permUseAi.checked = true;
+        el.permEditManual.checked = true;
+        el.permExportPrint.checked = true;
+        el.permViewAll.checked = false;
+        el.permDeleteInv.checked = false;
+        el.permEditConfig.checked = false;
+      }
+
+      document.getElementById("btn-clear-user-form").addEventListener("click", clearUserForm);
+
+      document.getElementById("btn-save-user").addEventListener("click", async function () {
+        const uname = (el.inpUUsername.value || "").trim();
+        const upass = (el.inpUPassword.value || "").trim();
+        const udisp = (el.inpUDisplay.value || "").trim() || uname;
+
+        if (!uname || !upass) {
+          showToast("⚠️ Debes escribir un usuario y una contraseña.");
+          return;
+        }
+
+        if (uname.toLowerCase() === MASTER_ADMIN.username.toLowerCase()) {
+          showToast("⚠️ El usuario JeanZ es la cuenta maestra reservada.");
+          return;
+        }
+
+        const editingId = el.editUserId.value;
+        const duplicate = registeredUsers.find(
+          (u) => u.username.toLowerCase() === uname.toLowerCase() && u.id !== editingId
+        );
+        if (duplicate) {
+          showToast("⚠️ Ya existe otro usuario con ese nombre.");
+          return;
+        }
+
+        const userRecord = {
+          id: editingId || "usr_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
+          username: uname,
+          password: upass,
+          displayName: udisp,
+          role: "user",
+          permissions: {
+            useAI: el.permUseAi.checked,
+            editManual: el.permEditManual.checked,
+            exportPrint: el.permExportPrint.checked,
+            viewAllInvoices: el.permViewAll.checked,
+            deleteInvoices: el.permDeleteInv.checked,
+            editConfig: el.permEditConfig.checked
+          }
+        };
+
+        await dbPut("users", userRecord);
+        await loadRegisteredUsers();
+        clearUserForm();
+        showToast(`✅ Usuario "${uname}" guardado con sus permisos.`);
+      });
+
+      el.usersAdminList.addEventListener("click", async function (e) {
+        const btn = e.target.closest("button[data-uaction]");
+        if (!btn) return;
+        const action = btn.getAttribute("data-uaction");
+        const uid = btn.getAttribute("data-uid");
+        const targetUser = registeredUsers.find((u) => u.id === uid);
+        if (!targetUser) return;
+
+        if (action === "edit") {
+          el.editUserId.value = targetUser.id;
+          el.inpUUsername.value = targetUser.username;
+          el.inpUPassword.value = targetUser.password;
+          el.inpUDisplay.value = targetUser.displayName || "";
+          const p = targetUser.permissions || {};
+          el.permUseAi.checked = Boolean(p.useAI);
+          el.permEditManual.checked = Boolean(p.editManual);
+          el.permExportPrint.checked = Boolean(p.exportPrint);
+          el.permViewAll.checked = Boolean(p.viewAllInvoices);
+          el.permDeleteInv.checked = Boolean(p.deleteInvoices);
+          el.permEditConfig.checked = Boolean(p.editConfig);
+          showToast(`Editando permisos de ${targetUser.username}`);
+        } else if (action === "del") {
+          if (!window.confirm(`¿Eliminar al usuario "${targetUser.username}"?`)) return;
+          await dbDelete("users", uid);
+          await loadRegisteredUsers();
+          showToast("🗑️ Usuario eliminado.");
+        }
+      });
+
+      // Guardar API Key de IA en el panel de JeanZ
+      document.getElementById("btn-toggle-apikey").addEventListener("click", function () {
+        el.inpAiApikey.type = el.inpAiApikey.type === "password" ? "text" : "password";
+      });
+
+      el.inpAiProvider.addEventListener("change", function () {
+        if (el.inpAiProvider.value === "gemini") {
+          el.inpAiModel.value = "gemini-2.5-flash";
+        } else {
+          el.inpAiModel.value = "gpt-4o-mini";
+        }
+      });
+
+      document.getElementById("btn-save-ai-settings").addEventListener("click", async function () {
+        appConfig.aiProvider = el.inpAiProvider.value;
+        appConfig.aiModel = (el.inpAiModel.value || "gemini-2.5-flash").trim();
+        appConfig.aiApiKey = (el.inpAiApikey.value || "").trim();
+        appConfig.aiCustomRules = el.inpAiCustomRules.value || "";
+        await saveConfigToDB();
+        showToast("🤖 Configuración y API Key de IA guardadas para los usuarios autorizados.");
+      });
+
+      document.getElementById("btn-test-ai-api").addEventListener("click", async function () {
+        appConfig.aiProvider = el.inpAiProvider.value;
+        appConfig.aiModel = (el.inpAiModel.value || "gemini-2.5-flash").trim();
+        appConfig.aiApiKey = (el.inpAiApikey.value || "").trim();
+        appConfig.aiCustomRules = el.inpAiCustomRules.value || "";
+
+        if (!appConfig.aiApiKey) {
+          alert("Primero pega tu API Key en el campo correspondiente.");
+          return;
+        }
+        try {
+          showToast("⏳ Probando conexión con la IA...");
+          await callInvoiceAI("Hola, confirma que estás conectado sin cambiar nada en la factura.");
+          showToast("✅ ¡Conexión exitosa! La API Key funciona al 100%.");
+        } catch (err) {
+          alert("Error al conectar con la API: " + err.message);
+        }
+      });
+
+      /* ------------------------------------------------------------------------
+         10. MOTOR DE INTELIGENCIA ARTIFICIAL PARA LLENADO DE FACTURAS
+         ------------------------------------------------------------------------ */
+      function appendChatMessage(role, text) {
+        const div = document.createElement("div");
+        div.className = "ai-msg " + role;
+        div.textContent = text;
+        el.aiChatMessages.appendChild(div);
+        el.aiChatMessages.scrollTop = el.aiChatMessages.scrollHeight;
+      }
+
+      async function callInvoiceAI(userInstruction) {
+        const apiKey = (appConfig.aiApiKey || "").trim();
+        if (!apiKey) {
+          throw new Error("El administrador (JeanZ) aún no ha configurado la API Key de Inteligencia Artificial en la pestaña Admin.");
+        }
+
+        const provider = appConfig.aiProvider || "gemini";
+        const model = (appConfig.aiModel || "gemini-2.5-flash").trim();
+
+        const systemPrompt = `Eres el Asistente Oficial de Facturación de TodoPopi (República Dominicana).
+Tu misión es tener conciencia total de lo que pide el usuario y colocar cada dato exactamente en su campo correspondiente de la factura actual.
+Fecha actual de referencia: ${getTodayISO()}.
+Reglas adicionales del administrador: ${appConfig.aiCustomRules || "Ninguna"}.
+
+ESTADO ACTUAL DE LA FACTURA (JSON):
+${JSON.stringify({
+  invoiceNumber: currentInvoice.invoiceNumber,
+  date: currentInvoice.date,
+  currency: currentInvoice.currency,
+  clientName: currentInvoice.clientName,
+  clientAddress: currentInvoice.clientAddress,
+  clientPhone: currentInvoice.clientPhone,
+  introText: currentInvoice.introText,
+  items: currentInvoice.items.map(i => ({
+    qty: i.qty,
+    unit: i.unit,
+    description: i.description,
+    unitPrice: i.unitPrice
+  })),
+  discountType: currentInvoice.discountType,
+  discountValue: currentInvoice.discountValue,
+  taxType: currentInvoice.taxType,
+  taxValue: currentInvoice.taxValue,
+  shippingValue: currentInvoice.shippingValue,
+  conditions: currentInvoice.conditions,
+  corporateMsg: currentInvoice.corporateMsg
+}, null, 2)}
+
+INSTRUCCIONES DE SALIDA OBLIGATORIAS:
+Debes responder ÚNICAMENTE con un objeto JSON válido (sin bloques markdown \`\`\`json) con esta estructura exacta:
+{
+  "reply": "Mensaje breve, claro y amigable confirmando qué cambios hiciste en la factura",
+  "invoiceUpdates": {
+    "invoiceNumber": "string (mantén el actual salvo que pidan cambiarlo)",
+    "date": "YYYY-MM-DD",
+    "currency": "RD$ | US$ | € | $",
+    "clientName": "Nombre del cliente",
+    "clientAddress": "Dirección o ciudad del cliente",
+    "clientPhone": "Teléfono o RNC si lo mencionan, o el actual",
+    "introText": "Texto introductorio",
+    "items": [
+      {
+        "qty": numero,
+        "unit": "Und | Paq | Caja | Servicio | etc.",
+        "description": "Descripción clara del producto o servicio",
+        "unitPrice": numero_precio_unitario
+      }
+    ],
+    "discountType": "fixed | percent",
+    "discountValue": numero,
+    "taxType": "percent | fixed",
+    "taxValue": numero,
+    "shippingValue": numero,
+    "conditions": "Condiciones comerciales (en viñetas o líneas)",
+    "corporateMsg": "Mensaje corporativo al pie"
+  }
+}
+
+REGLAS CRÍTICAS DE CONCIENCIA:
+1. Si la factura actual solo tiene el producto de ejemplo por defecto ("Producto o servicio comercial TodoPopi" a 500) y el usuario te dicta productos nuevos, REEMPLAZA ese producto de ejemplo por los productos reales que pidió el usuario.
+2. Si ya hay productos reales y el usuario dice "agrega...", "pon también..." o "súmale...", conserva los productos existentes en "items" y añade los nuevos.
+3. Si el usuario da el precio total de varias unidades diciendo por ejemplo "3 gorras por 1500 en total", calcula el unitPrice = 500. Si dice "3 gorras a 500 cada una" o "3 gorras a 500", el unitPrice es 500.
+4. Conserva intacto cualquier campo que el usuario no haya pedido cambiar.`;
+
+        let rawJsonText = "";
+
+        if (provider === "gemini") {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+          const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: systemPrompt }] },
+              contents: [{ role: "user", parts: [{ text: userInstruction }] }],
+              generationConfig: {
+                temperature: 0.15,
+                responseMimeType: "application/json"
+              }
+            })
+          });
+
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error((data.error && data.error.message) || "Error en la llamada a Gemini API.");
+          }
+          rawJsonText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        } else {
+          // Proveedor OpenAI o compatible
+          const url = "https://api.openai.com/v1/chat/completions";
+          const response = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+              model: model,
+              temperature: 0.15,
+              response_format: { type: "json_object" },
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userInstruction }
+              ]
+            })
+          });
+
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error((data.error && data.error.message) || "Error en la llamada a OpenAI API.");
+          }
+          rawJsonText = data.choices?.[0]?.message?.content || "";
+        }
+
+        // Limpiar posibles bloques markdown y parsear
+        const cleaned = rawJsonText.replace(/^```json\s*/i, "").replace(/```$/i, "").trim();
+        const parsed = JSON.parse(cleaned);
+
+        if (parsed && parsed.invoiceUpdates) {
+          const u = parsed.invoiceUpdates;
+          if (typeof u.invoiceNumber === "string" && u.invoiceNumber.trim()) currentInvoice.invoiceNumber = u.invoiceNumber.trim();
+          if (typeof u.date === "string" && u.date.trim()) currentInvoice.date = u.date.trim();
+          if (typeof u.currency === "string" && u.currency.trim()) currentInvoice.currency = u.currency.trim();
+          if (typeof u.clientName === "string") currentInvoice.clientName = u.clientName;
+          if (typeof u.clientAddress === "string") currentInvoice.clientAddress = u.clientAddress;
+          if (typeof u.clientPhone === "string") currentInvoice.clientPhone = u.clientPhone;
+          if (typeof u.introText === "string") currentInvoice.introText = u.introText;
+
+          if (Array.isArray(u.items) && u.items.length > 0) {
+            currentInvoice.items = u.items.map((it, idx) => ({
+              id: "item_" + Date.now() + "_" + idx,
+              qty: Math.max(0, Number(it.qty) || 1),
+              unit: String(it.unit || "Und"),
+              description: String(it.description || "Producto"),
+              unitPrice: Math.max(0, Number(it.unitPrice) || 0)
+            }));
+          }
+
+          if (u.discountType === "fixed" || u.discountType === "percent") currentInvoice.discountType = u.discountType;
+          if (u.discountValue !== undefined) currentInvoice.discountValue = Math.max(0, Number(u.discountValue) || 0);
+          if (u.taxType === "fixed" || u.taxType === "percent") currentInvoice.taxType = u.taxType;
+          if (u.taxValue !== undefined) currentInvoice.taxValue = Math.max(0, Number(u.taxValue) || 0);
+          if (u.shippingValue !== undefined) currentInvoice.shippingValue = Math.max(0, Number(u.shippingValue) || 0);
+          if (typeof u.conditions === "string") currentInvoice.conditions = u.conditions;
+          if (typeof u.corporateMsg === "string") currentInvoice.corporateMsg = u.corporateMsg;
+
+          currentInvoice.updatedAt = Date.now();
+          markDirtyState(true);
+          populateFormFromCurrentInvoice();
+        }
+
+        return parsed.reply || "✅ ¡Listo! Actualicé todos los campos de la factura.";
+      }
+
+      async function handleSendAiMessage() {
+        if (!currentUser) return;
+        const isMaster = currentUser.role === "admin";
+        if (!isMaster && !(currentUser.permissions && currentUser.permissions.useAI)) {
+          appendChatMessage("system-error", "⛔ Tu usuario no tiene permiso para usar el asistente de IA.");
+          return;
+        }
+
+        const text = (el.aiUserInput.value || "").trim();
+        if (!text) return;
+
+        el.aiUserInput.value = "";
+        appendChatMessage("user", text);
+        el.btnAiSend.disabled = true;
+        el.btnAiSend.textContent = "Pensando...";
+
+        try {
+          const reply = await callInvoiceAI(text);
+          appendChatMessage("assistant", reply);
+          showToast("🤖 Factura actualizada por la IA.");
+        } catch (err) {
+          appendChatMessage("system-error", "⚠️ " + err.message);
+        } finally {
+          el.btnAiSend.disabled = false;
+          el.btnAiSend.textContent = "Enviar 🚀";
+        }
+      }
+
+      el.btnAiSend.addEventListener("click", handleSendAiMessage);
+      el.aiUserInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          handleSendAiMessage();
+        }
+      });
+
+      document.querySelectorAll(".ai-chip").forEach((chip) => {
+        chip.addEventListener("click", function () {
+          el.aiUserInput.value = chip.getAttribute("data-prompt") || "";
+          el.aiUserInput.focus();
+        });
+      });
+
+      // Dictado por voz (Web Speech API para Chrome Android y PC)
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      let recognition = null;
+      let isRecording = false;
+
+      if (SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.lang = "es-DO";
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onresult = function (event) {
+          const transcript = event.results[0][0].transcript;
+          el.aiUserInput.value = (el.aiUserInput.value ? el.aiUserInput.value + " " : "") + transcript;
+          showToast("🎤 Voz capturada. Presiona Enviar.");
+        };
+
+        recognition.onend = function () {
+          isRecording = false;
+          el.btnAiMic.classList.remove("recording");
+        };
+
+        recognition.onerror = function () {
+          isRecording = false;
+          el.btnAiMic.classList.remove("recording");
+          showToast("⚠️ No se pudo capturar el micrófono.");
+        };
+      }
+
+      el.btnAiMic.addEventListener("click", function () {
+        if (!recognition) {
+          showToast("⚠️ Tu navegador no soporta dictado por voz directo.");
+          return;
+        }
+        if (isRecording) {
+          recognition.stop();
+        } else {
+          isRecording = true;
+          el.btnAiMic.classList.add("recording");
+          recognition.start();
+          showToast("🎤 Escuchando... Habla ahora para dictar la factura.");
+        }
+      });
+
+      /* ------------------------------------------------------------------------
+         11. CÁLCULOS AUTOMÁTICOS Y RENDERIZADO DE LA FACTURA (#invoice-sheet)
          ------------------------------------------------------------------------ */
       function calculateInvoiceTotals(invoice) {
         let itemsSubtotal = 0;
@@ -1695,7 +2624,6 @@
           });
         });
 
-        // Descuento
         const rawDiscountVal = Math.max(0, Number(invoice.discountValue) || 0);
         let discountAmount = 0;
         if (rawDiscountVal > 0) {
@@ -1705,13 +2633,10 @@
             discountAmount = roundMoney(rawDiscountVal);
           }
         }
-        if (discountAmount > itemsSubtotal) {
-          discountAmount = itemsSubtotal;
-        }
+        if (discountAmount > itemsSubtotal) discountAmount = itemsSubtotal;
 
         const taxableBase = roundMoney(itemsSubtotal - discountAmount);
 
-        // Impuestos
         const rawTaxVal = Math.max(0, Number(invoice.taxValue) || 0);
         let taxAmount = 0;
         if (rawTaxVal > 0) {
@@ -1722,10 +2647,7 @@
           }
         }
 
-        // Envío / cargos adicionales
         const shippingAmount = roundMoney(Math.max(0, Number(invoice.shippingValue) || 0));
-
-        // Total General = Suma de subtotales - descuentos + impuestos + cargos adicionales
         const grandTotal = roundMoney(taxableBase + taxAmount + shippingAmount);
 
         return {
@@ -1738,24 +2660,18 @@
         };
       }
 
-      /* ------------------------------------------------------------------------
-         9. RENDERIZADO DE LA FACTURA ORIGINAL (#invoice-sheet)
-         ------------------------------------------------------------------------ */
       function renderInvoiceSheet() {
         const calc = calculateInvoiceTotals(currentInvoice);
         const cur = currentInvoice.currency || "RD$";
 
-        // Configuración visual y corporativa
         el.docLogoImg.src = appConfig.logoDataUrl || PROTECTED_FACTORY_CONFIG.logoDataUrl;
         el.docLogoImg.style.width = (appConfig.logoWidth || 190) + "px";
         el.docCompanyTagline.textContent = appConfig.companyTagline || "";
         el.docFooter.textContent = appConfig.footerText || "";
 
-        // Encabezado
         el.docNumber.textContent = currentInvoice.invoiceNumber || "S/N";
         el.docDate.textContent = formatDisplayDate(currentInvoice.date);
 
-        // Cliente
         el.docClientName.textContent = currentInvoice.clientName || "Cliente al Contado";
 
         if (currentInvoice.clientAddress && currentInvoice.clientAddress.trim() !== "") {
@@ -1772,11 +2688,9 @@
           el.rowDocClientPhone.style.display = "none";
         }
 
-        // Texto introductorio
         el.docIntroText.textContent = currentInvoice.introText || "";
         el.docIntroText.style.display = currentInvoice.introText && currentInvoice.introText.trim() ? "block" : "none";
 
-        // Tabla de productos
         el.docItemsTbody.innerHTML = "";
         calc.computedItems.forEach((item) => {
           const tr = document.createElement("tr");
@@ -1809,7 +2723,6 @@
           el.docItemsTbody.appendChild(tr);
         });
 
-        // Totales (oculta impuestos, descuentos o envío si son 0)
         el.docSubtotal.textContent = formatCurrency(calc.itemsSubtotal, cur);
 
         if (calc.discountAmount > 0) {
@@ -1842,8 +2755,6 @@
         }
 
         el.docGrandTotal.textContent = formatCurrency(calc.grandTotal, cur);
-
-        // Condiciones y mensaje corporativo
         el.docConditions.textContent = currentInvoice.conditions || "";
         el.docCorporateMsg.textContent = currentInvoice.corporateMsg || "";
         el.docCorporateMsg.style.display =
@@ -1851,7 +2762,7 @@
       }
 
       /* ------------------------------------------------------------------------
-         10. SINCRONIZACIÓN ENTRE FORMULARIO Y MODELO DE DATOS
+         12. FORMULARIO Y EDITOR DE PRODUCTOS MANUAL
          ------------------------------------------------------------------------ */
       function populateFormFromCurrentInvoice() {
         el.inpNumber.value = currentInvoice.invoiceNumber || "";
@@ -1881,67 +2792,60 @@
         el.inpCfgSeq.value = appConfig.nextSequence || 1;
         el.inpCfgTagline.value = appConfig.companyTagline || "";
         el.inpCfgFooter.value = appConfig.footerText || "";
+
+        el.inpAiProvider.value = appConfig.aiProvider || "gemini";
+        el.inpAiModel.value = appConfig.aiModel || "gemini-2.5-flash";
+        el.inpAiApikey.value = appConfig.aiApiKey || "";
+        el.inpAiCustomRules.value = appConfig.aiCustomRules || "";
       }
 
-      /* ------------------------------------------------------------------------
-         11. EDITOR DE PRODUCTOS (AGREGAR, EDITAR, DUPLICAR, REORDENAR, ELIMINAR)
-         ------------------------------------------------------------------------ */
       function renderProductEditorCards() {
         el.productEditorContainer.innerHTML = "";
         const cur = currentInvoice.currency || "RD$";
+        const canManual = !currentUser || currentUser.role === "admin" || (currentUser.permissions && currentUser.permissions.editManual);
+        const disAttr = canManual ? "" : "disabled";
 
         currentInvoice.items.forEach((item, index) => {
           const card = document.createElement("div");
           card.className = "product-card";
-
           const lineSubtotal = roundMoney((Number(item.qty) || 0) * (Number(item.unitPrice) || 0));
 
           card.innerHTML = `
             <div class="product-card-header">
               <span class="product-index-badge">Ítem #${index + 1}</span>
-              <div class="product-card-actions">
-                <button type="button" class="btn btn-outline btn-sm" data-action="up" data-idx="${index}" title="Subir" ${index === 0 ? "disabled" : ""}>↑</button>
-                <button type="button" class="btn btn-outline btn-sm" data-action="down" data-idx="${index}" title="Bajar" ${index === currentInvoice.items.length - 1 ? "disabled" : ""}>↓</button>
-                <button type="button" class="btn btn-outline btn-sm" data-action="dup" data-idx="${index}" title="Duplicar ítem">📋 Duplicar</button>
-                <button type="button" class="btn btn-danger btn-sm" data-action="del" data-idx="${index}" title="Eliminar ítem">✕</button>
+              <div style="display:flex; gap:4px;">
+                <button type="button" class="btn btn-outline btn-sm" data-action="up" data-idx="${index}" ${index === 0 || !canManual ? "disabled" : ""}>↑</button>
+                <button type="button" class="btn btn-outline btn-sm" data-action="down" data-idx="${index}" ${index === currentInvoice.items.length - 1 || !canManual ? "disabled" : ""}>↓</button>
+                <button type="button" class="btn btn-outline btn-sm" data-action="dup" data-idx="${index}" ${disAttr}>📋 Duplicar</button>
+                <button type="button" class="btn btn-danger btn-sm" data-action="del" data-idx="${index}" ${disAttr}>✕</button>
               </div>
             </div>
             <div class="form-group">
               <label>Descripción del Producto o Servicio</label>
-              <textarea rows="2" data-field="description" data-idx="${index}" placeholder="Descripción detallada">${escapeHtml(item.description || "")}</textarea>
+              <textarea rows="2" data-field="description" data-idx="${index}" ${disAttr}>${escapeHtml(item.description || "")}</textarea>
             </div>
             <div class="product-card-grid">
               <div class="form-group">
                 <label>Cantidad</label>
-                <input type="number" step="any" min="0" data-field="qty" data-idx="${index}" value="${item.qty}" />
+                <input type="number" step="any" min="0" data-field="qty" data-idx="${index}" value="${item.qty}" ${disAttr} />
               </div>
               <div class="form-group">
                 <label>Unidad</label>
-                <input type="text" data-field="unit" data-idx="${index}" value="${escapeHtml(item.unit || "Und")}" placeholder="Und, Paq, Servicio..." />
+                <input type="text" data-field="unit" data-idx="${index}" value="${escapeHtml(item.unit || "Und")}" ${disAttr} />
               </div>
               <div class="form-group">
                 <label>Precio Unitario (${cur})</label>
-                <input type="number" step="0.01" min="0" data-field="unitPrice" data-idx="${index}" value="${item.unitPrice}" />
+                <input type="number" step="0.01" min="0" data-field="unitPrice" data-idx="${index}" value="${item.unitPrice}" ${disAttr} />
               </div>
             </div>
             <div class="product-subtotal-preview" id="item-sub-preview-${index}">
               Subtotal Ítem: ${formatCurrency(lineSubtotal, cur)}
             </div>
           `;
-
           el.productEditorContainer.appendChild(card);
         });
       }
 
-      function escapeHtml(str) {
-        return String(str)
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;");
-      }
-
-      // Eventos en tiempo real para productos
       el.productEditorContainer.addEventListener("input", function (e) {
         const target = e.target;
         const idx = parseInt(target.getAttribute("data-idx"), 10);
@@ -1968,7 +2872,6 @@
         renderInvoiceSheet();
       });
 
-      // Botones de acciones de productos (Subir, Bajar, Duplicar, Eliminar)
       el.productEditorContainer.addEventListener("click", function (e) {
         const btn = e.target.closest("button[data-action]");
         if (!btn) return;
@@ -2020,9 +2923,6 @@
       document.getElementById("btn-add-item").addEventListener("click", addNewProductRow);
       document.getElementById("btn-add-item-bottom").addEventListener("click", addNewProductRow);
 
-      /* ------------------------------------------------------------------------
-         12. EVENTOS EN TIEMPO REAL DE LOS CAMPOS GENERALES
-         ------------------------------------------------------------------------ */
       function bindLiveField(inputEl, propName, isNumeric) {
         inputEl.addEventListener("input", function () {
           currentInvoice[propName] = isNumeric
@@ -2030,9 +2930,7 @@
             : inputEl.value;
           currentInvoice.updatedAt = Date.now();
           markDirtyState(true);
-          if (propName === "currency") {
-            renderProductEditorCards();
-          }
+          if (propName === "currency") renderProductEditorCards();
           renderInvoiceSheet();
         });
       }
@@ -2053,7 +2951,7 @@
       bindLiveField(el.inpCorporateMsg, "corporateMsg", false);
 
       /* ------------------------------------------------------------------------
-         13. NUMERACIÓN AUTOMÁTICA SIN DUPLICADOS
+         13. GUARDAR, DUPLICAR E HISTORIAL DE FACTURAS
          ------------------------------------------------------------------------ */
       function generateNextUniqueInvoiceNumber(dateStr) {
         const existingNumbers = new Set(savedInvoicesList.map((inv) => inv.invoiceNumber));
@@ -2075,12 +2973,8 @@
         showToast("Número generado: " + res.number);
       });
 
-      /* ------------------------------------------------------------------------
-         14. GUARDAR, ACTUALIZAR, DUPLICAR Y GESTIONAR EN INDEXEDDB
-         ------------------------------------------------------------------------ */
       async function refreshSavedInvoicesList() {
         savedInvoicesList = await dbGetAll("invoices");
-        el.countInvoices.textContent = String(savedInvoicesList.length);
         renderSavedInvoicesHistory();
       }
 
@@ -2092,9 +2986,8 @@
 
         if (asNewCopy) {
           currentInvoice.id = "inv_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
-          const dupExists = savedInvoicesList.some(
-            (inv) => inv.invoiceNumber === currentInvoice.invoiceNumber
-          );
+          currentInvoice.createdBy = currentUser ? currentUser.username : "JeanZ";
+          const dupExists = savedInvoicesList.some((inv) => inv.invoiceNumber === currentInvoice.invoiceNumber);
           if (dupExists) {
             const nextObj = generateNextUniqueInvoiceNumber(currentInvoice.date);
             currentInvoice.invoiceNumber = nextObj.number;
@@ -2102,13 +2995,12 @@
             await saveConfigToDB();
           }
         } else {
-          // Verificar que el número no esté duplicado en otra factura distinta
           const conflict = savedInvoicesList.find(
             (inv) => inv.invoiceNumber === currentInvoice.invoiceNumber && inv.id !== currentInvoice.id
           );
           if (conflict) {
             const confirmNumber = window.confirm(
-              `Ya existe otra factura guardada con el número ${currentInvoice.invoiceNumber}. ¿Deseas generar el siguiente número disponible automáticamente?`
+              `Ya existe otra factura guardada con el número ${currentInvoice.invoiceNumber}. ¿Generar el siguiente número disponible?`
             );
             if (confirmNumber) {
               const nextObj = generateNextUniqueInvoiceNumber(currentInvoice.date);
@@ -2120,10 +3012,12 @@
           }
         }
 
+        if (!currentInvoice.createdBy && currentUser) {
+          currentInvoice.createdBy = currentUser.username;
+        }
         currentInvoice.updatedAt = Date.now();
         await dbPut("invoices", JSON.parse(JSON.stringify(currentInvoice)));
 
-        // Actualizar secuencia si corresponde
         const matchSeq = currentInvoice.invoiceNumber.match(/-(\d+)$/);
         if (matchSeq) {
           const numVal = parseInt(matchSeq[1], 10);
@@ -2138,16 +3032,20 @@
         markDirtyState(false);
         populateFormFromCurrentInvoice();
         await refreshSavedInvoicesList();
-        showToast("✅ Factura " + currentInvoice.invoiceNumber + " guardada correctamente.");
+        showToast("✅ Factura " + currentInvoice.invoiceNumber + " guardada.");
       }
 
       async function createNewInvoiceFlow() {
         if (hasUnsavedChanges) {
-          const proceed = window.confirm("Tienes cambios sin guardar en la factura actual. ¿Deseas crear una factura nueva de todos modos?");
+          const proceed = window.confirm("Tienes cambios sin guardar. ¿Crear una factura nueva de todos modos?");
           if (!proceed) return;
         }
         const nextObj = generateNextUniqueInvoiceNumber(getTodayISO());
-        currentInvoice = createBlankInvoiceFromTemplate(appConfig, nextObj.usedSeq);
+        currentInvoice = createBlankInvoiceFromTemplate(
+          appConfig,
+          nextObj.usedSeq,
+          currentUser ? currentUser.username : "JeanZ"
+        );
         currentInvoice.invoiceNumber = nextObj.number;
         markDirtyState(false);
         populateFormFromCurrentInvoice();
@@ -2159,12 +3057,13 @@
         clone.id = "inv_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
         const nextObj = generateNextUniqueInvoiceNumber(clone.date);
         clone.invoiceNumber = nextObj.number;
+        clone.createdBy = currentUser ? currentUser.username : "JeanZ";
         clone.createdAt = Date.now();
         clone.updatedAt = Date.now();
         currentInvoice = clone;
         markDirtyState(true);
         populateFormFromCurrentInvoice();
-        showToast("📋 Factura duplicada con nuevo número: " + currentInvoice.invoiceNumber);
+        showToast("📋 Factura duplicada: " + currentInvoice.invoiceNumber);
       }
 
       document.getElementById("btn-save-invoice").addEventListener("click", () => saveCurrentInvoice(false));
@@ -2174,20 +3073,32 @@
       document.getElementById("btn-top-new").addEventListener("click", createNewInvoiceFlow);
       document.getElementById("btn-duplicate-current").addEventListener("click", duplicateCurrentInvoiceFlow);
 
-      /* ------------------------------------------------------------------------
-         15. HISTORIAL, BÚSQUEDA, FILTRADO Y COPIAS DE SEGURIDAD JSON
-         ------------------------------------------------------------------------ */
       function renderSavedInvoicesHistory() {
         el.savedInvoicesContainer.innerHTML = "";
+        const isMaster = !currentUser || currentUser.role === "admin";
+        const perms = isMaster ? MASTER_ADMIN.permissions : (currentUser.permissions || {});
+        const canSeeAll = isMaster || perms.viewAllInvoices;
+        const canDelete = isMaster || perms.deleteInvoices;
+
         const q = (el.searchQuery.value || "").trim().toLowerCase();
         const fDate = el.filterDate.value || "";
         const sortDir = el.sortOrder.value || "desc";
 
-        let filtered = savedInvoicesList.filter((inv) => {
+        const visibleInvoices = savedInvoicesList.filter((inv) => {
+          if (!canSeeAll && currentUser && inv.createdBy && inv.createdBy !== currentUser.username) {
+            return false;
+          }
+          return true;
+        });
+
+        el.countInvoices.textContent = String(visibleInvoices.length);
+
+        let filtered = visibleInvoices.filter((inv) => {
           const matchesQuery =
             !q ||
             (inv.clientName && inv.clientName.toLowerCase().includes(q)) ||
-            (inv.invoiceNumber && inv.invoiceNumber.toLowerCase().includes(q));
+            (inv.invoiceNumber && inv.invoiceNumber.toLowerCase().includes(q)) ||
+            (inv.createdBy && inv.createdBy.toLowerCase().includes(q));
           const matchesDate = !fDate || inv.date === fDate;
           return matchesQuery && matchesDate;
         });
@@ -2195,34 +3106,33 @@
         filtered.sort((a, b) => {
           const da = a.date || "";
           const db = b.date || "";
-          if (da !== db) {
-            return sortDir === "desc" ? db.localeCompare(da) : da.localeCompare(db);
-          }
+          if (da !== db) return sortDir === "desc" ? db.localeCompare(da) : da.localeCompare(db);
           return sortDir === "desc" ? (b.updatedAt || 0) - (a.updatedAt || 0) : (a.updatedAt || 0) - (b.updatedAt || 0);
         });
 
         if (filtered.length === 0) {
-          el.savedInvoicesContainer.innerHTML = `<div style="padding:16px; text-align:center; color:#6b7280; font-size:0.88rem;">No se encontraron facturas guardadas con esos criterios.</div>`;
+          el.savedInvoicesContainer.innerHTML = `<div style="padding:16px; text-align:center; color:#6b7280; font-size:0.86rem;">No hay facturas guardadas para mostrar.</div>`;
           return;
         }
 
         filtered.forEach((inv) => {
           const totals = calculateInvoiceTotals(inv);
           const itemDiv = document.createElement("div");
-          itemDiv.className = "saved-invoice-item" + (inv.id === currentInvoice.id ? " active-invoice" : "");
+          itemDiv.className = "saved-invoice-item";
 
           itemDiv.innerHTML = `
             <div class="saved-invoice-top">
               <div>
-                <div class="saved-invoice-num">${escapeHtml(inv.invoiceNumber)}</div>
-                <div class="saved-invoice-meta">👤 ${escapeHtml(inv.clientName || "Sin nombre")} • 📅 ${formatDisplayDate(inv.date)}</div>
+                <div style="font-weight:800; color:#111827;">${escapeHtml(inv.invoiceNumber)}</div>
+                <div style="font-size:0.8rem; color:#4b5563;">👤 ${escapeHtml(inv.clientName || "Sin nombre")} • 📅 ${formatDisplayDate(inv.date)}</div>
+                <div style="font-size:0.74rem; color:#6b7280;">Creada por: <strong>${escapeHtml(inv.createdBy || "JeanZ")}</strong></div>
               </div>
-              <div class="saved-invoice-total">${formatCurrency(totals.grandTotal, inv.currency)}</div>
+              <div style="font-weight:800; color:#059669;">${formatCurrency(totals.grandTotal, inv.currency)}</div>
             </div>
-            <div class="saved-invoice-actions">
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
               <button type="button" class="btn btn-primary btn-sm" data-hist-action="open" data-id="${inv.id}">📂 Abrir</button>
               <button type="button" class="btn btn-outline btn-sm" data-hist-action="dup" data-id="${inv.id}">📋 Duplicar</button>
-              <button type="button" class="btn btn-danger btn-sm" data-hist-action="del" data-id="${inv.id}">🗑️ Eliminar</button>
+              ${canDelete ? `<button type="button" class="btn btn-danger btn-sm" data-hist-action="del" data-id="${inv.id}">🗑️ Eliminar</button>` : ""}
             </div>
           `;
           el.savedInvoicesContainer.appendChild(itemDiv);
@@ -2248,45 +3158,50 @@
         if (!targetInv) return;
 
         if (action === "open") {
-          if (hasUnsavedChanges) {
-            const ok = window.confirm("Tienes cambios sin guardar. ¿Deseas abrir esta factura y descartar los cambios actuales?");
-            if (!ok) return;
-          }
           currentInvoice = JSON.parse(JSON.stringify(targetInv));
           markDirtyState(false);
           populateFormFromCurrentInvoice();
-          renderSavedInvoicesHistory();
           showToast("📂 Factura abierta: " + currentInvoice.invoiceNumber);
         } else if (action === "dup") {
           const clone = JSON.parse(JSON.stringify(targetInv));
           clone.id = "inv_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
           const nextObj = generateNextUniqueInvoiceNumber(clone.date);
           clone.invoiceNumber = nextObj.number;
+          clone.createdBy = currentUser ? currentUser.username : "JeanZ";
           currentInvoice = clone;
           markDirtyState(true);
           populateFormFromCurrentInvoice();
           showToast("📋 Factura duplicada: " + currentInvoice.invoiceNumber);
         } else if (action === "del") {
-          const confirmDel = window.confirm(`¿Estás seguro de eliminar permanentemente la factura ${targetInv.invoiceNumber} de ${targetInv.clientName}?`);
-          if (!confirmDel) return;
+          if (!window.confirm(`¿Eliminar la factura ${targetInv.invoiceNumber}?`)) return;
           await dbDelete("invoices", id);
           await refreshSavedInvoicesList();
           showToast("🗑️ Factura eliminada.");
         }
       });
 
-      // Exportar e Importar Copia de Seguridad Completa (JSON)
+      // Backup Total JSON (Incluye Facturas, Configuración, API Key y Usuarios)
       document.getElementById("btn-export-backup").addEventListener("click", async function () {
         const allInvoices = await dbGetAll("invoices");
-        const backupPayload = {
-          app: "TodoPopi Invoice Studio",
-          version: "1.0",
+        const allUsers = await dbGetAll("users");
+        const payload = {
+          app: "TodoPopi Invoice Studio + IA",
+          version: "2.0",
           exportedAt: new Date().toISOString(),
           settings: appConfig,
+          users: allUsers,
           invoices: allInvoices
         };
-        downloadJsonFile(backupPayload, `TodoPopi_Backup_${getTodayISO()}.json`);
-        showToast("⬇️ Copia de seguridad JSON descargada.");
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `TodoPopi_Backup_Total_${getTodayISO()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast("⬇️ Backup total descargado.");
       });
 
       document.getElementById("inp-import-backup").addEventListener("change", function (e) {
@@ -2296,43 +3211,35 @@
         reader.onload = async function (evt) {
           try {
             const parsed = JSON.parse(evt.target.result);
-            if (parsed.settings && typeof parsed.settings === "object") {
+            if (parsed.settings) {
               appConfig = Object.assign({}, PROTECTED_FACTORY_CONFIG, parsed.settings);
               await saveConfigToDB();
               populateConfigForm();
             }
+            if (Array.isArray(parsed.users)) {
+              for (const u of parsed.users) {
+                if (u && u.id && u.username) await dbPut("users", u);
+              }
+              await loadRegisteredUsers();
+            }
             if (Array.isArray(parsed.invoices)) {
               for (const inv of parsed.invoices) {
-                if (inv && inv.id && inv.invoiceNumber) {
-                  await dbPut("invoices", inv);
-                }
+                if (inv && inv.id && inv.invoiceNumber) await dbPut("invoices", inv);
               }
+              await refreshSavedInvoicesList();
             }
-            await refreshSavedInvoicesList();
             renderInvoiceSheet();
-            showToast("✅ Copia de seguridad importada con éxito.");
+            showToast("✅ Backup total restaurado correctamente.");
           } catch (err) {
-            showToast("❌ Archivo JSON inválido o corrupto.");
+            showToast("❌ Archivo JSON inválido.");
           }
           e.target.value = "";
         };
         reader.readAsText(file);
       });
 
-      function downloadJsonFile(obj, filename) {
-        const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }
-
       /* ------------------------------------------------------------------------
-         16. LOGOTIPO Y CONFIGURACIÓN DEL NEGOCIO
+         14. CONFIGURACIÓN DEL LOGO Y NEGOCIO
          ------------------------------------------------------------------------ */
       async function saveConfigToDB() {
         await dbPut("settings", {
@@ -2349,7 +3256,7 @@
           appConfig.logoDataUrl = evt.target.result;
           await saveConfigToDB();
           renderInvoiceSheet();
-          showToast("🖼️ Logotipo cargado y guardado en almacenamiento local.");
+          showToast("🖼️ Logotipo actualizado.");
         };
         reader.readAsDataURL(file);
       });
@@ -2367,7 +3274,7 @@
         populateConfigForm();
         await saveConfigToDB();
         renderInvoiceSheet();
-        showToast("Logotipo original de TodoPopi restaurado.");
+        showToast("Logo original restaurado.");
       });
 
       document.getElementById("btn-save-config").addEventListener("click", async function () {
@@ -2377,37 +3284,30 @@
         appConfig.footerText = el.inpCfgFooter.value;
         await saveConfigToDB();
         renderInvoiceSheet();
-        showToast("✅ Configuración comercial guardada.");
-      });
-
-      document.getElementById("btn-export-config-json").addEventListener("click", function () {
-        downloadJsonFile(
-          { app: "TodoPopi Config", settings: appConfig },
-          `TodoPopi_Config_${getTodayISO()}.json`
-        );
-        showToast("⬇️ Configuración exportada.");
+        showToast("✅ Datos del negocio guardados.");
       });
 
       document.getElementById("btn-reset-factory").addEventListener("click", async function () {
-        const ok = window.confirm("¿Deseas restaurar la plantilla y configuración a los valores originales de TodoPopi? (Tus facturas guardadas no se borrarán).");
-        if (!ok) return;
-        appConfig = Object.assign({}, PROTECTED_FACTORY_CONFIG);
+        if (!window.confirm("¿Restaurar textos y logo originales de fábrica? (Se conservará tu API Key y facturas).")) return;
+        const keepKey = appConfig.aiApiKey;
+        const keepProvider = appConfig.aiProvider;
+        const keepModel = appConfig.aiModel;
+        appConfig = Object.assign({}, PROTECTED_FACTORY_CONFIG, {
+          aiApiKey: keepKey,
+          aiProvider: keepProvider,
+          aiModel: keepModel
+        });
         await saveConfigToDB();
         populateConfigForm();
-        currentInvoice.introText = appConfig.defaultIntroText;
-        currentInvoice.conditions = appConfig.defaultConditions;
-        currentInvoice.corporateMsg = appConfig.defaultCorporateMsg;
-        populateFormFromCurrentInvoice();
-        showToast("🔄 Plantilla original restaurada.");
+        renderInvoiceSheet();
+        showToast("🔄 Valores originales restaurados.");
       });
 
       /* ------------------------------------------------------------------------
-         17. EXPORTACIÓN A PDF, PNG, JPG E IMPRESIÓN
+         15. EXPORTACIÓN A PDF, PNG, JPG E IMPRESIÓN
          ------------------------------------------------------------------------ */
       async function waitForAssetsReady() {
-        if (document.fonts && document.fonts.ready) {
-          await document.fonts.ready;
-        }
+        if (document.fonts && document.fonts.ready) await document.fonts.ready;
         const imgs = Array.from(el.invoiceSheet.querySelectorAll("img"));
         await Promise.all(
           imgs.map((img) => {
@@ -2422,19 +3322,16 @@
 
       async function captureInvoiceCanvas(scaleFactor) {
         if (typeof window.html2canvas !== "function") {
-          throw new Error("La biblioteca html2canvas no está disponible. Verifica tu conexión a Internet.");
+          throw new Error("La biblioteca html2canvas no está disponible.");
         }
-
         await waitForAssetsReady();
-
-        // Guardar transformación responsive actual y restablecer a escala 1:1 para captura limpia
         const prevTransform = el.invoiceScaleWrapper.style.transform;
         const prevMarginBottom = el.invoiceScaleWrapper.style.marginBottom;
         el.invoiceScaleWrapper.style.transform = "none";
         el.invoiceScaleWrapper.style.marginBottom = "0px";
 
         try {
-          const canvas = await window.html2canvas(el.invoiceSheet, {
+          return await window.html2canvas(el.invoiceSheet, {
             scale: scaleFactor || 2,
             useCORS: true,
             allowTaint: false,
@@ -2442,83 +3339,75 @@
             logging: false,
             windowWidth: 1200
           });
-          return canvas;
         } finally {
           el.invoiceScaleWrapper.style.transform = prevTransform;
           el.invoiceScaleWrapper.style.marginBottom = prevMarginBottom;
         }
       }
 
-      // EXPORTAR PNG
+      function triggerDownload(dataUrl, filename) {
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+
       document.getElementById("btn-export-png").addEventListener("click", async function () {
         try {
-          showToast("⏳ Generando imagen PNG de alta calidad...");
+          showToast("⏳ Generando PNG...");
           const scale = parseInt(el.selImgScale.value, 10) || 2;
           const canvas = await captureInvoiceCanvas(scale);
-          const dataUrl = canvas.toDataURL("image/png");
-          triggerDataUrlDownload(dataUrl, `${currentInvoice.invoiceNumber || "Factura_TodoPopi"}.png`);
-          showToast("✅ Imagen PNG exportada.");
+          triggerDownload(canvas.toDataURL("image/png"), `${currentInvoice.invoiceNumber || "Factura"}.png`);
+          showToast("✅ PNG descargado.");
         } catch (err) {
-          alert("Error al exportar a PNG: " + err.message);
+          alert("Error al exportar PNG: " + err.message);
         }
       });
 
-      // EXPORTAR JPG
       document.getElementById("btn-export-jpg").addEventListener("click", async function () {
         try {
-          showToast("⏳ Generando imagen JPG...");
+          showToast("⏳ Generando JPG...");
           const scale = parseInt(el.selImgScale.value, 10) || 2;
           const quality = parseFloat(el.selJpgQuality.value) || 0.95;
           const canvas = await captureInvoiceCanvas(scale);
-          const dataUrl = canvas.toDataURL("image/jpeg", quality);
-          triggerDataUrlDownload(dataUrl, `${currentInvoice.invoiceNumber || "Factura_TodoPopi"}.jpg`);
-          showToast("✅ Imagen JPG exportada.");
+          triggerDownload(canvas.toDataURL("image/jpeg", quality), `${currentInvoice.invoiceNumber || "Factura"}.jpg`);
+          showToast("✅ JPG descargado.");
         } catch (err) {
-          alert("Error al exportar a JPG: " + err.message);
+          alert("Error al exportar JPG: " + err.message);
         }
       });
 
-      // EXPORTAR PDF (Controlando dimensiones, márgenes y paginación sin páginas en blanco)
       document.getElementById("btn-export-pdf").addEventListener("click", async function () {
         try {
           if (!window.jspdf || !window.jspdf.jsPDF) {
-            throw new Error("La biblioteca jsPDF no está disponible. Verifica tu conexión o usa el botón IMPRIMIR FACTURA.");
+            throw new Error("jsPDF no está disponible. Usa el botón IMPRIMIR FACTURA.");
           }
-          showToast("⏳ Generando PDF oficial de TodoPopi...");
-
+          showToast("⏳ Generando PDF...");
           const paperFormat = el.selPaperSize.value || "letter";
           const scale = parseInt(el.selImgScale.value, 10) || 2;
           const canvas = await captureInvoiceCanvas(scale);
           const imgData = canvas.toDataURL("image/png");
 
           const { jsPDF } = window.jspdf;
-          const pdf = new jsPDF({
-            orientation: "portrait",
-            unit: "mm",
-            format: paperFormat,
-            compress: true
-          });
+          const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: paperFormat, compress: true });
 
           const pageWidth = pdf.internal.pageSize.getWidth();
           const pageHeight = pdf.internal.pageSize.getHeight();
-          const margin = 8; // margen limpio de 8 mm
+          const margin = 8;
           const usableWidth = pageWidth - margin * 2;
           const usableHeight = pageHeight - margin * 2;
-
           const imgWidth = usableWidth;
           const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
           if (imgHeight <= usableHeight) {
-            // Cabe en una sola página sin hojas en blanco adicionales
             pdf.addImage(imgData, "PNG", margin, margin, imgWidth, imgHeight, undefined, "FAST");
           } else {
-            // Si hay muchos productos y supera 1 página, divide limpiamente en páginas sucesivas
             let heightLeft = imgHeight;
             let position = margin;
-
             pdf.addImage(imgData, "PNG", margin, position, imgWidth, imgHeight, undefined, "FAST");
             heightLeft -= usableHeight;
-
             while (heightLeft > 2) {
               position = heightLeft - imgHeight + margin;
               pdf.addPage(paperFormat, "portrait");
@@ -2528,42 +3417,37 @@
           }
 
           pdf.save(`${currentInvoice.invoiceNumber || "Factura_TodoPopi"}.pdf`);
-          showToast("✅ PDF exportado correctamente.");
+          showToast("✅ PDF descargado.");
         } catch (err) {
           alert("Error al exportar PDF: " + err.message);
         }
       });
 
-      // IMPRIMIR FACTURA
       document.getElementById("btn-print-invoice").addEventListener("click", async function () {
         await waitForAssetsReady();
         window.print();
       });
 
-      function triggerDataUrlDownload(dataUrl, filename) {
-        const a = document.createElement("a");
-        a.href = dataUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }
-
       /* ------------------------------------------------------------------------
-         18. NAVEGACIÓN POR PESTAÑAS Y ESCALADO RESPONSIVE DE LA HOJA EN MÓVIL
+         16. NAVEGACIÓN DE PESTAÑAS Y ESCALADO RESPONSIVE
          ------------------------------------------------------------------------ */
       const tabButtons = document.querySelectorAll(".nav-tab");
       const tabPanes = document.querySelectorAll(".tab-pane");
 
+      function switchTab(targetId) {
+        tabButtons.forEach((b) => b.classList.toggle("active", b.getAttribute("data-tab") === targetId));
+        tabPanes.forEach((p) => p.classList.toggle("active", p.id === targetId));
+      }
+
       tabButtons.forEach((btn) => {
         btn.addEventListener("click", function () {
-          const targetId = btn.getAttribute("data-tab");
-          tabButtons.forEach((b) => b.classList.remove("active"));
-          tabPanes.forEach((p) => p.classList.remove("active"));
-          btn.classList.add("active");
-          const pane = document.getElementById(targetId);
-          if (pane) pane.classList.add("active");
+          switchTab(btn.getAttribute("data-tab"));
         });
+      });
+
+      el.btnTopAi.addEventListener("click", function () {
+        switchTab("tab-ia");
+        el.aiUserInput.focus();
       });
 
       function adjustInvoiceViewportScale() {
@@ -2583,40 +3467,43 @@
 
       window.addEventListener("resize", adjustInvoiceViewportScale);
 
-      // Aviso al intentar cerrar pestaña con cambios sin guardar
-      window.addEventListener("beforeunload", function (e) {
-        if (hasUnsavedChanges) {
-          e.preventDefault();
-          e.returnValue = "";
-        }
-      });
-
       /* ------------------------------------------------------------------------
-         19. INICIALIZACIÓN Y VERIFICACIÓN DE BIBLIOTECAS CDN
+         17. INICIALIZACIÓN DEL SISTEMA
          ------------------------------------------------------------------------ */
       async function initStudio() {
         try {
           await openDatabase();
 
-          // Cargar configuración guardada
           const savedCfg = await dbGet("settings", "main_config");
           if (savedCfg && savedCfg.data) {
             appConfig = Object.assign({}, PROTECTED_FACTORY_CONFIG, savedCfg.data);
           }
 
-          // Cargar facturas guardadas
+          await loadRegisteredUsers();
           await refreshSavedInvoicesList();
 
-          // Preparar factura inicial con número único
           const nextObj = generateNextUniqueInvoiceNumber(getTodayISO());
-          currentInvoice = createBlankInvoiceFromTemplate(appConfig, nextObj.usedSeq);
+          currentInvoice = createBlankInvoiceFromTemplate(appConfig, nextObj.usedSeq, "JeanZ");
           currentInvoice.invoiceNumber = nextObj.number;
 
           populateConfigForm();
           populateFormFromCurrentInvoice();
           markDirtyState(false);
 
-          // Verificar si hay un borrador sin guardar de una sesión previa
+          // Restaurar sesión activa si ya había iniciado sesión en esta pestaña
+          const savedSession = sessionStorage.getItem("tp_active_user");
+          if (savedSession) {
+            try {
+              const parsedSession = JSON.parse(savedSession);
+              const reverified = authenticateUser(parsedSession.username, parsedSession.password);
+              if (reverified) {
+                currentUser = reverified;
+                el.loginOverlay.style.display = "none";
+                applyUserPermissionsToUI();
+              }
+            } catch (e) {}
+          }
+
           const savedDraft = await dbGet("drafts", "active_draft");
           if (savedDraft && savedDraft.invoice) {
             pendingRecoveredDraft = savedDraft.invoice;
@@ -2625,12 +3512,10 @@
         } catch (err) {
           populateConfigForm();
           populateFormFromCurrentInvoice();
-          showToast("⚠️ Almacenamiento local restringido: " + err.message);
         }
 
         adjustInvoiceViewportScale();
 
-        // Verificar disponibilidad de bibliotecas externas CDN tras la carga
         window.addEventListener("load", function () {
           setTimeout(() => {
             const hasCanvas = typeof window.html2canvas === "function";
@@ -2650,7 +3535,7 @@
           el.draftBanner.style.display = "none";
           populateFormFromCurrentInvoice();
           markDirtyState(true);
-          showToast("📝 Borrador recuperado correctamente.");
+          showToast("📝 Borrador recuperado.");
         }
       });
 
